@@ -7,27 +7,100 @@ Final project and report for Functional Programming Course. Implementation of fi
 For the state implementation, thinking of using a variant of the "turnstile" construction used on the [[https://en.wikibooks.org/wiki/Haskell/Understanding_monads/State][State Monad Haskell wikibooks page]].
 
 ** Defining things
+
+For the time being, all code here is tangling to a sandbox in ~testing.hs~.
+
+#+begin_src haskell :tangle ./testing.hs
+import Control.Monad.State
+import qualified Control.Category
+#+end_src
+
 *** DFAs
 
 Thinking of representing using a State Monad construction. Where an automaton is usually thought of as a set of states, a transition function, and a subset of final states, we will do the following:
 
 We could also maybe use ~StateT~ with the identity monad? We'll definitely want it for NFAs, see below...
+#+begin_src haskell :tangle ./testing.hs
+type AState  = Int -- maybe wrap in constructor
+type Output = Bool -- maybe wrap in constructor
+type Letter = Int  -- maybe wrap in constructor
 
-#+begin_src haskell 
-newtype DetTransition s a = DT { run :: s -> (a, s) }
+type DTrans = State AState Output -- StateT with Identity monad
+type NTrans = StateT AState [] Output 
 
-type Astate = Int -- maybe wrap with constructor
-type Output = T | F -- accepting or non-accepting
-type Letter = Int -- maybe wrap with constructor
+-- easy composition of deterministic transitions
+(<.>) :: DTrans -> DTrans -> DTrans
+(<.>) a b = a >>= const b -- ignore the output of the intermediate state
 
-data DetAut = DA { states :: [Astate]j
-                 , output :: [(Astate, Output)]
-                 , run :: Letter -> DetTransition Astate Output }
-  deriving (Eq,Ord,Show)
+-- want to make the above work with this typeclass
+-- instance Category DTrans where
+    -- id = StateT $ \s -> (val s, s)
+    -- (.) a b = a >>= const b
+
+-- easy shorthand for defining transitions
+l :: (AState -> AState) -> DTrans
+l f = StateT $ \s -> let s' = f s in return (val $ s', s')
 #+end_src
 
-so we have a set of states, and then the transition functions for each letter for that particular automaton.
+TESTING! 
+#+begin_src haskell :tangle ./testing.hs
+-- good for testing
+showRun :: AState -> DTrans -> String
+showRun s t = show $ runState t s
 
+type Valuation = AState -> Output -- could also do set of AState
+
+-- for the moment our state set is N, and all states > 10 are accepting
+
+val :: Valuation
+val x = x > 10
+
+-- make a plus transition
+p :: Int -> DTrans
+p = \x -> l (+x)
+-- pTrans = l $ (+)
+
+-- make a subtraction transition
+s :: Int -> DTrans
+s = \x -> l (subtract x)
+
+-- big list of transitions
+tlist = [(s 3), (p 2), (p 3), (s 10), (p 19)]
+
+-- here's how we can compose em all together
+composed = foldr (<.>) (l id) tlist
+
+test :: String
+test = showRun 9 composed
+-- initial state is 9
+#+end_src
+
+An automaton consists of a set of worlds, and a collection of ~DTrans~, one for each letter of our alphabet.
+#+begin_src haskell :tangle ./testing.hs
+data DetAut = DA { states :: [AState]
+                 , delta :: Letter -> DTrans }
+#+end_src
+*One problem I'm having:* how to ensure we only input letters of our alphabet? It feels wrong to encode the automaton, should we work it into the type? I'm not even sure how to do that.
+
+A way of more easily encoding the data of an automaton. Then we can create a "safetyCheck" that if a dataset passes, we encode as a DA.
+#+begin_src haskell :tangle ./testing.hs
+type AutData = ( [AState]                    -- all states
+               , [AState]                    -- accepting states
+               , [(AState, Letter, AState)]) -- transitions
+
+-- can it define a deterministic automaton? (totality of transition)
+safetyCheck :: AutData -> Bool
+safetyCheck = undefined
+
+-- contingent on passing safetyCheck, make it into a DA
+encodeDA :: AutData -> Maybe DetAut
+encodeDA d | safetyCheck d = Just undefined
+           | otherwise = Nothing
+
+-- make it into an NA
+-- encodeNA :: AutData -> NDetAut
+-- encodeNA = undefined
+#+end_src
 
 *** NFAs
 
@@ -35,8 +108,15 @@ Should basically just be the same as a DFA, except we trade functions ~s -> (a, 
 
 This will require a variant of the State monad for outputting a set of potential states. We can use ~StateT~ with the ~List~ monad, I think.
 
-#+begin_src haskell 
+#+begin_src haskell :tangle ./testing.hs
 newtype NDetState s a = NST { run :: s -> [(a, s)] }
+
+-- s -> [(a,s)]
+-- NTrans b = ST $ s -> 
+
+-- 
+-- ~> for transitioning states?
+
 #+end_src
 
 *** regexes
