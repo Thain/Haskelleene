@@ -1,0 +1,96 @@
+#+TITLE: Haskelleene
+
+Final project and report for Functional Programming Course. Implementation of finite automata, regular expressions, and Kleene algebra within Haskell; in particular an algorithm for converting between automata and regular expressions, and vice versa.
+
+* The Plan
+
+For the state implementation, thinking of using a variant of the "turnstile" construction used on the [[https://en.wikibooks.org/wiki/Haskell/Understanding_monads/State][State Monad Haskell wikibooks page]].
+
+** Defining things
+*** T DFAs
+
+Thinking of representing using a State Monad construction. Where an automaton is usually thought of as a set of states, a transition function, and a subset of final states, we will do the following:
+
+We could also maybe use ~StateT~ with the identity monad? We'll definitely want it for NFAs, see below...
+
+#+begin_src haskell 
+newtype DetTransition s a = DT { run :: s -> (a, s) }
+
+type Astate = Int -- maybe wrap with constructor
+type Output = T | F -- accepting or non-accepting
+type Letter = Int -- maybe wrap with constructor
+
+data DetAut = DA { states :: [Astate]j
+                 , output :: [(Astate, Output)]
+                 , run :: Letter -> DetTransition Astate Output }
+  deriving (Eq,Ord,Show)
+#+end_src
+
+so we have a set of states, and then the transition functions for each letter for that particular automaton.
+
+
+*** T NFAs
+
+Should basically just be the same as a DFA, except we trade functions ~s -> (a, s)~ for ~s -> (a, [s])~.
+
+This will require a variant of the State monad for outputting a set of potential states. We can use ~StateT~ with the ~List~ monad, I think.
+
+#+begin_src haskell 
+newtype NDetState s a = NST { run :: s -> [(a, s)] }
+#+end_src
+
+*** T regexes
+
+** Semantics
+*** T DFA semantics
+
+*** T NFA semantics
+
+*** T Regex semantics
+
+*** T QuickCheck Semantics
+
+** Translating (Aut <-> Regex)
+*** T Power-set Construction
+*** T QuickCheck Determinisation Equivalence
+
+*** T "Lift" from DFAs to NFAs
+*** T Floyd-Warshall Algorithm (Aut -> Regex)
+
+A reachability algorithm ([[https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm][wikipedia]]) to determine the shortest paths between vertices in a graph. The plan is to use it to create a regular expression representing a given automaton.
+
+Closely related to Kleene's algorithm ([[https://en.wikipedia.org/wiki/Kleene%27s_algorithm][wikipedia]]) for creating a regular expression from an automaton.
+
+*** T Going the other way (Regex -> Aut)
+
+*** T QuickCheck mutual inverses
+
+by generating both automata and regexes, and running both constructions in sequence to see if we get an equivalent thing.
+
+*** T QuickCheck languages the same
+
+For a randomly generated automata and the regex it gets, as well as for a regex and the automata it gets.
+
+** Kleene algebra
+
+a proof system for reasoning about equality of regular expressions.
+
+*** T Define proof system
+
+see Malvin's notes on Tableaux from May 06 lecture.
+
+* Github actions Telegram bot
+
+using php code from [[https://github.com/jacopo-j/commits-telegram-bot][github]] (needs web hosting)
+
+alternately use [[https://medium.com/@rakshithjayakumar/creating-a-telegram-bot-and-sending-messages-using-github-actions-1c988ad68e9e][this python code]]
+
+* Notes from template README
+
+See [[report.pdf][report.pdf]] for documentation.
+
+Note: To rename the project you need to replace all occurrences of "report" with your own library name in the following files:
+
+- `hie.yaml`
+- `package.yaml`
+
