@@ -7,7 +7,7 @@ Final project and report for Functional Programming Course. Implementation of fi
 For the state implementation, thinking of using a variant of the "turnstile" construction used on the [[https://en.wikibooks.org/wiki/Haskell/Understanding_monads/State][State Monad Haskell wikibooks page]].
 
 ** Defining things
-*** T DFAs
+*** DFAs
 
 Thinking of representing using a State Monad construction. Where an automaton is usually thought of as a set of states, a transition function, and a subset of final states, we will do the following:
 
@@ -29,7 +29,7 @@ data DetAut = DA { states :: [Astate]j
 so we have a set of states, and then the transition functions for each letter for that particular automaton.
 
 
-*** T NFAs
+*** NFAs
 
 Should basically just be the same as a DFA, except we trade functions ~s -> (a, s)~ for ~s -> (a, [s])~.
 
@@ -39,35 +39,35 @@ This will require a variant of the State monad for outputting a set of potential
 newtype NDetState s a = NST { run :: s -> [(a, s)] }
 #+end_src
 
-*** T regexes
+*** regexes
 
 ** Semantics
-*** T DFA semantics
+*** DFA semantics
 
-*** T NFA semantics
+*** NFA semantics
 
-*** T Regex semantics
+*** Regex semantics
 
-*** T QuickCheck Semantics
+*** QuickCheck Semantics
 
 ** Translating (Aut <-> Regex)
-*** T Power-set Construction
-*** T QuickCheck Determinisation Equivalence
+*** Power-set Construction
+*** QuickCheck Determinisation Equivalence
 
-*** T "Lift" from DFAs to NFAs
-*** T Floyd-Warshall Algorithm (Aut -> Regex)
+*** "Lift" from DFAs to NFAs
+*** Floyd-Warshall Algorithm (Aut -> Regex)
 
 A reachability algorithm ([[https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm][wikipedia]]) to determine the shortest paths between vertices in a graph. The plan is to use it to create a regular expression representing a given automaton.
 
 Closely related to Kleene's algorithm ([[https://en.wikipedia.org/wiki/Kleene%27s_algorithm][wikipedia]]) for creating a regular expression from an automaton.
 
-*** T Going the other way (Regex -> Aut)
+*** Going the other way (Regex -> Aut)
 
-*** T QuickCheck mutual inverses
+*** QuickCheck mutual inverses
 
 by generating both automata and regexes, and running both constructions in sequence to see if we get an equivalent thing.
 
-*** T QuickCheck languages the same
+*** QuickCheck language equivalence
 
 For a randomly generated automata and the regex it gets, as well as for a regex and the automata it gets.
 
@@ -75,7 +75,7 @@ For a randomly generated automata and the regex it gets, as well as for a regex 
 
 a proof system for reasoning about equality of regular expressions.
 
-*** T Define proof system
+*** Define proof system
 
 see Malvin's notes on Tableaux from May 06 lecture.
 
