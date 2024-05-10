@@ -1,6 +1,4 @@
-
-\section{Simple Tests}
-\label{sec:simpletests}
+\section{Simple Tests}\label{sec:simpletests}
 
 We now use the library QuickCheck to randomly generate input for our functions
 and test some properties.
