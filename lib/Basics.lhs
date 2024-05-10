@@ -6,7 +6,7 @@ This section describes a module which we will import later on.
 module Basics where
 
 import Control.Monad.State
-import qualified Control.Category 
+import qualified Control.Category as Cat
 
 type AState  = Int -- maybe wrap in constructor
 type Output = Bool -- maybe wrap in constructor
@@ -16,17 +16,20 @@ type DTrans = State AState Output -- StateT with Identity monad
 type NTrans = StateT AState [] Output 
 
 -- easy composition of deterministic transitions
-(<.>) :: DTrans -> DTrans -> DTrans
-(<.>) a b = a >>= const b -- ignore the output of the intermediate state
+-- LY: this is the same as (>>)
+-- (<.>) :: DTrans -> DTrans -> DTrans
+-- (<.>) a b = a >>= const b -- ignore the output of the intermediate state
 
 -- want to make the above work with this typeclass
+-- LY: Category in haskell is defined to accept a kind (* -> * -> *), while DTrans has kind *
 -- instance Category DTrans where
-    -- id = StateT $ \s -> (val s, s)
-    -- (.) a b = a >>= const b
+--  id = StateT $ \s -> (val s, s)
+--  (.) = (>>)
 
 -- easy shorthand for defining transitions
+-- LY: Please change this name to something else. Better: This really sounds like (<$>).
 l :: (AState -> AState) -> DTrans
-l f = StateT $ \s -> let s' = f s in return (val $ s', s')
+l f = StateT $ \s -> return (val (f s), (f s))
 
 -- good for testing
 showRun :: AState -> DTrans -> String
@@ -40,19 +43,22 @@ val :: Valuation
 val x = x > 10
 
 -- make a plus transition
-p :: Int -> DTrans
-p = \x -> l (+x)
+plus :: Int -> DTrans
+plus = \x -> l (+x)
 -- pTrans = l $ (+)
 
 -- make a subtraction transition
-s :: Int -> DTrans
-s = \x -> l (subtract x)
+-- LY: VERY VERY VERY BAD name for this, this shadows ALL the s appearing in this file! Haskell does not evaluate from top to bottom! I also change the previous short names...
+-- s :: Int -> DTrans
+-- s = \x -> l (subtract x)
+subt :: Int -> DTrans
+subt = \x -> l (subtract x)
 
 -- big list of transitions
-tlist = [(s 3), (p 2), (p 3), (s 10), (p 19)]
+tlist = [(subt 3), (plus 2), (plus 3), (subt 10), (plus 19)]
 
 -- here's how we can compose em all together
-composed = foldr (<.>) (l id) tlist
+composed = foldr (>>) (l id) tlist
 
 test :: String
 test = showRun 9 composed
