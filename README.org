@@ -75,10 +75,10 @@ test = showRun 9 composed
 -- initial state is 9
 #+end_src
 
-An automaton consists of a set of worlds, and a collection of ~DTrans~, one for each letter of our alphabet.
+An automaton consists of a set of worlds, and a collection of ~DTrans~, one for each letter of our alphabet. We let $l$ 
 #+begin_src haskell :tangle ./testing.hs
-data DetAut = DA { states :: [AState]
-                 , delta :: Letter -> DTrans }
+data DetAut l s = DA { states :: [s]
+                     , delta :: l -> DTrans }
 #+end_src
 *One problem I'm having:* how to ensure we only input letters of our alphabet? It feels wrong to encode the automaton, should we work it into the type? I'm not even sure how to do that.
 

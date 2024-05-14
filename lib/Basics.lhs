@@ -6,89 +6,115 @@ This section describes a module which we will import later on.
 module Basics where
 
 import Control.Monad.State
-import qualified Control.Category as Cat
+import Data.Maybe
+import Data.Functor.Identity
+import Data.List
+-- import Data.List.Extra
 
-type AState  = Int -- maybe wrap in constructor
-type Output = Bool -- maybe wrap in constructor
-type Letter = Int  -- maybe wrap in constructor
+-- utility for checking if a list has duplicates
+allUnq:: Eq a => [a] -> Bool
+allUnq = f []
+    where
+        f seen (x:xs) = not (x `elem` seen) && f (x:seen) xs
+        f seen [] = True
 
-type DTrans = State AState Output -- StateT with Identity monad
-type NTrans = StateT AState [] Output 
+-- l is the type of our alphabet (most likely a finite set),
+-- s is the type of our states
+-- Maybe l because we allow empty transitions
+data AutData l s = AD { stateData :: [s] 
+                      , acceptData :: [s] 
+                      , transitionData :: [(s, [(Maybe l, s)])] }
 
--- easy composition of deterministic transitions
--- LY: this is the same as (>>)
--- (<.>) :: DTrans -> DTrans -> DTrans
--- (<.>) a b = a >>= const b -- ignore the output of the intermediate state
+-- recall:
+-- "State s Bool" is "s -> (Bool,s)"
+-- "StateT s [] Bool" is "s -> [(Bool,s)]"
 
--- want to make the above work with this typeclass
--- LY: Category in haskell is defined to accept a kind (* -> * -> *), while DTrans has kind *
--- instance Category DTrans where
---  id = StateT $ \s -> (val s, s)
---  (.) = (>>)
+data DetAut  l s = DA { states :: [s]
+                      , delta :: l -> State s Bool }
 
--- easy shorthand for defining transitions
--- LY: Please change this name to something else. Better: This really sounds like (<$>).
-l :: (AState -> AState) -> DTrans
-l f = StateT $ \s -> return (val (f s), (f s))
+data NDetAut l s = NA { nstates :: [s]
+                      , ndelta :: (Maybe l) -> StateT s [] Bool }
 
--- good for testing
-showRun :: AState -> DTrans -> String
-showRun s t = show $ runState t s
+-- just a b c for now
+data Letter = A | B | C deriving (Eq, Ord)
+-- data Letter = A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z
+alphSize = 3
 
-type Valuation = AState -> Output -- could also do set of AState
+-- can the data define a det automaton? (totality of transition)
+detCheck :: (Eq l, Eq s) => AutData l s -> Bool
+detCheck ad = length states == length (stateData ad) && allUnq states  -- all states are in transitionData exactly once
+              && and (map detCheckHelper stateTrs) where               -- check transitions for each letter exactly once
+  states = map fst $ transitionData ad
+  stateTrs = map snd $ transitionData ad
 
--- for the moment our state set is N, and all states > 10 are accepting
+detCheckHelper :: (Eq l, Eq s) => [(Maybe l,s)] -> Bool
+detCheckHelper trs = not (elem Nothing inputs)      -- no empty transitions
+                     && length inputs == alphSize   -- correct number of transitions
+                     && allUnq inputs where         -- all state/letter pairs unique
+  inputs = map fst trs
 
-val :: Valuation
-val x = x > 10
+-- contingent on passing safetyCheck, make data into a DA
+encodeDA :: (Eq l, Eq s) => AutData l s -> Maybe (DetAut l s)
+encodeDA d | not $ detCheck d = Nothing
+           | otherwise = Just $ DA { states = stateData d
+                                   , delta = \l -> StateT (stTrans l) } where
+               stTrans l s = return (calcV l s, calcS l s)
+               calcV l s = elem (calcS l s) (acceptData d)
+               calcS l s = fromJust $ lookup (Just l) $ fromJust (lookup s (transitionData d)) 
+               
+-- make data into an NA (no need for safety check)
+encodeNA :: AutData l s -> NDetAut l s
+encodeNA d = NA { nstates = stateData d
+                , ndelta = undefined }
 
--- make a plus transition
-plus :: Int -> DTrans
-plus = \x -> l (+x)
--- pTrans = l $ (+)
+-- todo:
+-- - make a list of transitions easily
+-- - compose them using (>>) and foldr
 
--- make a subtraction transition
--- LY: VERY VERY VERY BAD name for this, this shadows ALL the s appearing in this file! Haskell does not evaluate from top to bottom! I also change the previous short names...
--- s :: Int -> DTrans
--- s = \x -> l (subtract x)
-subt :: Int -> DTrans
-subt = \x -> l (subtract x)
+myAutData :: AutData Letter Int
+myAutData = AD [1,2,3,4]        -- the states
+               [4]              -- accepting states
+               [(1,[(Just A,1)  -- the transitions
+                   ,(Just B,2)
+                   ,(Just C,3)])
+               ,(2,[(Just A,4)
+                   ,(Just B,2)
+                   ,(Just C,1)])
+               ,(3,[(Just A,1)
+                   ,(Just B,4)
+                   ,(Just C,3)])
+               ,(4,[(Just A,4)
+                   ,(Just B,4)
+                   ,(Just C,4)])]
 
--- big list of transitions
-tlist = [(subt 3), (plus 2), (plus 3), (subt 10), (plus 19)]
+myDACheck :: Bool
+myDACheck = detCheck myAutData
 
--- here's how we can compose em all together
-composed = foldr (>>) (l id) tlist
+myDA :: DetAut Letter Int
+myDA = fromJust $ encodeDA myAutData
 
-test :: String
-test = showRun 9 composed
--- initial state is 9
+-- an accepting sequence of inputs
+myInputs :: [Letter]
+myInputs = [A,A,A,A,B,C,B,B,B,A]
 
-data DetAut = DA { states :: [AState]
-                 , delta :: Letter -> DTrans }
+-- myTrs :: [State Int Bool]
+-- myTrs = map (delta myDA) myInputs 
 
-type AutData = ( [AState]                    -- all states
-               , [AState]                    -- accepting states
-               , [(AState, Letter, AState)]) -- transitions
+-- foldl so we don't lose the last output! could we do without a base case? by hand?
+composed :: State Int Bool
+composed = foldl (>>) (StateT (\s -> return (False,s))) (map (delta myDA) myInputs)
 
--- can it define a deterministic automaton? (totality of transition)
-safetyCheck :: AutData -> Bool
-safetyCheck = undefined
+output :: (Bool,Int)
+output = runState composed 1
 
--- contingent on passing safetyCheck, make it into a DA
-encodeDA :: AutData -> Maybe DetAut
-encodeDA d | safetyCheck d = Just undefined
-           | otherwise = Nothing
+-- takes DA, input letter list, and initial state to output pair
+run :: DetAut l s -> [l] -> s -> (Bool, s)
+run = undefined
 
--- make it into an NA
--- encodeNA :: AutData -> NDetAut
--- encodeNA = undefined
+accept :: DetAut l s -> [l] -> s -> Bool
+accept aut word init = fst $ run aut word init  
 
-newtype NDetState s a = NST { run :: s -> [(a, s)] }
+finalState :: DetAut l s -> [l] -> s -> s
+finalState aut word init = snd $ run aut word init  
 
--- s -> [(a,s)]
--- NTrans b = ST $ s -> 
-
--- 
--- ~> for transitioning states?
 \end{code}
