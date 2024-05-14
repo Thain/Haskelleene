@@ -9,7 +9,6 @@ import Control.Monad.State
 import Data.Maybe
 import Data.Functor.Identity
 import Data.List
--- import Data.List.Extra
 
 -- utility for checking if a list has duplicates
 allUnq:: Eq a => [a] -> Bool
@@ -48,9 +47,6 @@ instance Alphabet Letter where
   alphIter ls = sort ls == [A,B,C] 
   
 -- data Letter = A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z
-
-alphSize :: Int
-alphSize = 3
 
 -- can the data define a det automaton? (totality of transition)
 detCheck :: (Alphabet l, Eq l, Eq s) => AutData l s -> Bool
@@ -137,14 +133,22 @@ simplifyRegex rx = case rx of
                     (Star Epsilon) -> Epsilon
                     (Star (Star r)) -> simplifyRegex r
                     x -> x
-                    
-exampleRegex :: Regex Letter
-exampleRegex = Star (Alt (L A) (L B))
 
-annoyingRegex :: Regex Letter
-annoyingRegex = Alt Empty (Seq Epsilon (L A))
+-- REGEX to DetAut
+-- Since regex to automata inducts on the transition functions, we need a way to glue or reshape our automata nicely
+regToAut :: Regex l -> AutData l Int
+regToAut (L l) = AD [1,2] [2] [(1, [(Just l,2)]), (1, [(Just l,2)])] 
+regToAut r = undefined
+-- regToAut (Seq (L l) (L l')) = seqRegAut $ (regToAut (L l)) (regToAut (L l')) 
 
-strToRegex :: String -> (Regex Letter)
-strToRegex = undefined
+seqRegAut :: AutData l Int -> AutData l Int -> AutData l Int
+seqRegAut = undefined
+-- seqRegAut aut1 aut2 = AD [x | x <- stateData aut2 ]++[x*10 | x <- stateData aut2] [x | x <- acceptData] [(x*10, gluingStatesSeq x aut1 aut2 ) | x <- stateData aut1]
+
+gluingStatesSeq :: Int -> AutData l Int -> AutData l Int -> AutData l Int
+gluingStatesSeq  x aut1 aut2 = undefined
+ -- | x `elem` acceptData aut1 = fromJust  (lookup x transitionData aut1)++(Epsilon, StartingState)
+ -- |otherwise  fromJust  (lookup x transitionData aut1)
 
 \end{code}
+
