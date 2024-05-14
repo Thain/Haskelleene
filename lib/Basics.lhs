@@ -39,6 +39,11 @@ data NDetAut l s = NA { nstates :: [s]
 
 -- just a b c for now
 data Letter = A | B | C deriving (Eq, Ord)
+instance Show Letter where
+  show A = "a"
+  show B = "b"
+  show C = "c"
+  
 -- data Letter = A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z
 
 alphSize :: Int
@@ -74,6 +79,7 @@ encodeDA d | not $ detCheck d = Nothing
 -- make data into an NA (no need for safety check)
 encodeNA :: AutData l s -> NDetAut l s
 encodeNA d = NA { nstates = stateData d
+                , naccept = acceptData d
                 , ndelta = undefined }
 
 myAutData :: AutData Letter Int
@@ -120,10 +126,58 @@ output = runState composed 1
 run :: DetAut l s -> [l] -> s -> (Bool, s)
 run = undefined
 
-accept :: DetAut l s -> [l] -> s -> Bool
-accept aut word initstate = fst $ run aut word initstate
+autAccept :: DetAut l s -> [l] -> s -> Bool
+autAccept aut word initstate = fst $ run aut word initstate
 
 finalState :: DetAut l s -> [l] -> s -> s
 finalState aut word initstate = snd $ run aut word initstate
+
+-- REGEX stuff
+
+data Regex l = Empty | Epsilon | L l | Alt (Regex l) (Regex l) | Seq (Regex l) (Regex l) | Star (Regex l) 
+
+instance Eq l => Eq (Regex l) where
+  (==) Empty Empty = True
+  (==) Epsilon Epsilon = True
+  (==) (L l) (L l') = l == l'
+  (==) (Alt r r') (Alt r'' r''') = compsEq r r' r'' r'''
+  (==) (Seq r r') (Seq r'' r''') = compsEq r r' r'' r'''
+  (==) (Star r) (Star r') = r == r'
+
+-- couldn't make the "where" notation work
+compsEq :: Eq a => a -> a -> a -> a -> Bool
+compsEq r r' r'' r''' = (r == r'' && r' == r''') || (r == r''' && r' == r'')
+
+instance Show l => Show (Regex l) where
+  show Empty = "∅"
+  show Epsilon = "ε"
+  show (L a) = show a
+  show (Star (Alt r r')) = "(" ++ (show r) ++ " + " ++ (show r') ++ ")*"
+  show (Alt r r') = "(" ++ (show r) ++ " + " ++ (show r') ++ ")"
+  show (Seq r r') = (show r) ++ (show r')
+  show (Star r) = "(" ++ (show r) ++ ")*"
+
+simplifyRegex :: Eq l => Regex l -> Regex l
+simplifyRegex rx = case rx of
+                    (Alt Empty r) -> simplifyRegex r
+                    (Alt r Empty) -> simplifyRegex r
+                    (Alt r r') | r == r' -> simplifyRegex r
+                    (Seq r Epsilon) -> simplifyRegex r
+                    (Seq Epsilon r) -> simplifyRegex r
+                    (Seq r Empty) -> Empty
+                    (Seq Empty r) -> Empty
+                    (Star Empty) -> Empty
+                    (Star Epsilon) -> Epsilon
+                    (Star (Star r)) -> simplifyRegex r
+                    x -> x
+                    
+exampleRegex :: Regex Letter
+exampleRegex = Star (Alt (L A) (L B))
+
+annoyingRegex :: Regex Letter
+annoyingRegex = Alt Empty (Seq Epsilon (L A))
+
+strToRegex :: String -> (Regex Letter)
+strToRegex = undefined
 
 \end{code}
