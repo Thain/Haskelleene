@@ -126,4 +126,22 @@ accept aut word initstate = fst $ run aut word initstate
 finalState :: DetAut l s -> [l] -> s -> s
 finalState aut word initstate = snd $ run aut word initstate
 
+
+
+-- REGEX to DetAut
+-- Since regex to automata inducts on the transition functions, we need a way to glue or reshape our automata nicely
+regToAut:: Regex l -> AutData l Int
+regToAut (L l) = AD [1,2] [2] [(1, [(l,2)]), (1, [(l,2)])] 
+regToAut (Seq (L l) (L l')) = seqRegAut $ (regToAut (L l)) (regToAutToAut (L l')) 
+
+seqRegAut:: AutData l Int AutData l Int -> AutData l Int
+seqRegAut aut1 aut2 = AD [x | x<-stateData aut2 ]++[x*10 | x<-stateData aut2] [x| x<- acceptData] [(x*10, gluingStatesSeq x aut1 aut2 ) | x<- stateData aut1]
+
+gluingStatesSeq:: Int AutData l Int AutData l Int
+gluingStatesSeq  x aut1 aut2 
+ | x `elem` acceptData aut1 = fromJust  (lookup x transitionData aut1)++(Epsilon, StartingState)
+ |otherwise  fromJust  (lookup x transitionData aut1)
+ 
+
 \end{code}
+
