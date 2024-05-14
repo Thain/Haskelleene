@@ -30,9 +30,11 @@ data AutData l s = AD { stateData :: [s]
 -- "StateT s [] Bool" is "s -> [(Bool,s)]"
 
 data DetAut  l s = DA { states :: [s]
+                      , accept :: [s]
                       , delta :: l -> State s Bool }
 
 data NDetAut l s = NA { nstates :: [s]
+                      , naccept :: [s]
                       , ndelta :: Maybe l -> StateT s [] Bool }
 
 -- just a b c for now
@@ -41,6 +43,10 @@ data Letter = A | B | C deriving (Eq, Ord)
 
 alphSize :: Int
 alphSize = 3
+
+class Alphabet a where
+  alphIter :: [a] -> Bool
+-- todo : redo alphsize in terms of this function
 
 -- can the data define a det automaton? (totality of transition)
 detCheck :: (Eq l, Eq s) => AutData l s -> Bool
@@ -59,6 +65,7 @@ detCheckHelper trs = notElem Nothing inputs      -- no empty transitions
 encodeDA :: (Eq l, Eq s) => AutData l s -> Maybe (DetAut l s)
 encodeDA d | not $ detCheck d = Nothing
            | otherwise = Just $ DA { states = stateData d
+                                   , accept = acceptData d
                                    , delta = StateT . stTrans } where
                stTrans l s = return (calcV l s, calcS l s)
                calcV l s = calcS l s `elem` acceptData d
@@ -68,10 +75,6 @@ encodeDA d | not $ detCheck d = Nothing
 encodeNA :: AutData l s -> NDetAut l s
 encodeNA d = NA { nstates = stateData d
                 , ndelta = undefined }
-
--- todo:
--- - make a list of transitions easily
--- - compose them using (>>) and foldr
 
 myAutData :: AutData Letter Int
 myAutData = AD [1,2,3,4]        -- the states
@@ -101,6 +104,10 @@ myInputs = [A,A,A,A,B,C,B,B,B,A]
 
 -- myTrs :: [State Int Bool]
 -- myTrs = map (delta myDA) myInputs 
+
+nothingTransition :: State l s
+nothingTransition = undefined
+-- is this ~pure~?
 
 -- foldl so we don't lose the last output! could we do without a base case? by hand?
 composed :: State Int Bool
