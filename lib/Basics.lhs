@@ -27,15 +27,15 @@ data AutData l s = AD { stateData :: [s]
 
 -- recall:
 -- "State s Bool" is "s -> (Bool,s)"
--- "StateT s [] Bool" is "s -> [(Bool,s)]"
-
 data DetAut  l s = DA { states :: [s]
                       , accept :: [s]
                       , delta :: l -> State s Bool }
 
-data NDetAut l s = NA { nstates :: [s]
-                      , naccept :: [s]
-                      , ndelta :: Maybe l -> StateT s [] Bool }
+-- a typeclass for finite alphabets
+class Alphabet a where
+  alphIter :: [a] -> Bool
+-- alphIter should check if the list contains exactly the elements of the type
+
 
 -- just a b c for now
 data Letter = A | B | C deriving (Eq, Ord)
@@ -43,31 +43,28 @@ instance Show Letter where
   show A = "a"
   show B = "b"
   show C = "c"
+
+instance Alphabet Letter where
+  alphIter ls = sort ls == [A,B,C] 
   
 -- data Letter = A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z
 
 alphSize :: Int
 alphSize = 3
 
-class Alphabet a where
-  alphIter :: [a] -> Bool
--- todo : redo alphsize in terms of this function
-
 -- can the data define a det automaton? (totality of transition)
-detCheck :: (Eq l, Eq s) => AutData l s -> Bool
+detCheck :: (Alphabet l, Eq l, Eq s) => AutData l s -> Bool
 detCheck ad = length sts == length (stateData ad) && allUnq sts  -- all states are in transitionData exactly once
               && all detCheckHelper stateTrs where               -- check transitions for each letter exactly once
   sts = map fst $ transitionData ad
   stateTrs = map snd $ transitionData ad
 
-detCheckHelper :: (Eq l, Eq s) => [(Maybe l,s)] -> Bool
-detCheckHelper trs = notElem Nothing inputs      -- no empty transitions
-                     && length inputs == alphSize   -- correct number of transitions
-                     && allUnq inputs where         -- all state/letter pairs unique
-  inputs = map fst trs
+detCheckHelper :: (Alphabet l, Eq l, Eq s) => [(Maybe l,s)] -> Bool
+detCheckHelper trs = notElem Nothing (map fst trs)            -- no empty transitions
+                     && alphIter (map fromJust (map fst trs)) -- transition set is exactly the alphabet
 
 -- contingent on passing safetyCheck, make data into a DA
-encodeDA :: (Eq l, Eq s) => AutData l s -> Maybe (DetAut l s)
+encodeDA :: (Alphabet l, Eq l, Eq s) => AutData l s -> Maybe (DetAut l s)
 encodeDA d | not $ detCheck d = Nothing
            | otherwise = Just $ DA { states = stateData d
                                    , accept = acceptData d
@@ -75,64 +72,32 @@ encodeDA d | not $ detCheck d = Nothing
                stTrans l s = return (calcV l s, calcS l s)
                calcV l s = calcS l s `elem` acceptData d
                calcS l s = fromJust $ lookup (Just l) $ fromJust (lookup s (transitionData d)) 
-               
+
+-- takes DA, input letter list, and initial state to output pair
+run :: DetAut l s -> [l] -> s -> (Bool, s)
+run da w s0 = (`runState` s0) $ foldl' (>>) (pure False) (map (delta da) w) 
+
+autAccept :: DetAut l s -> [l] -> s -> Bool
+autAccept da w s0 = fst $ run da w s0
+
+finalState :: DetAut l s -> [l] -> s -> s
+finalState da w s0 = snd $ run da w s0
+
+-- NA definitions
+
+-- "StateT s [] Bool" is "s -> [(Bool,s)]"
+data NDetAut l s = NA { nstates :: [s]
+                      , naccept :: [s]
+                      , ndelta :: Maybe l -> StateT s [] Bool }
+
+
 -- make data into an NA (no need for safety check)
 encodeNA :: AutData l s -> NDetAut l s
 encodeNA d = NA { nstates = stateData d
                 , naccept = acceptData d
                 , ndelta = undefined }
 
-myAutData :: AutData Letter Int
-myAutData = AD [1,2,3,4]        -- the states
-               [4]              -- accepting states
-               [(1,[(Just A,1)  -- the transitions
-                   ,(Just B,2)
-                   ,(Just C,3)])
-               ,(2,[(Just A,4)
-                   ,(Just B,2)
-                   ,(Just C,1)])
-               ,(3,[(Just A,1)
-                   ,(Just B,4)
-                   ,(Just C,3)])
-               ,(4,[(Just A,4)
-                   ,(Just B,4)
-                   ,(Just C,4)])]
-
-myDACheck :: Bool
-myDACheck = detCheck myAutData
-
-myDA :: DetAut Letter Int
-myDA = fromJust $ encodeDA myAutData
-
--- an accepting sequence of inputs
-myInputs :: [Letter]
-myInputs = [A,A,A,A,B,C,B,B,B,A]
-
--- myTrs :: [State Int Bool]
--- myTrs = map (delta myDA) myInputs 
-
-nothingTransition :: State l s
-nothingTransition = undefined
--- is this ~pure~?
-
--- foldl so we don't lose the last output! could we do without a base case? by hand?
-composed :: State Int Bool
-composed = foldl (>>) (StateT (\s -> return (False,s))) (map (delta myDA) myInputs)
-
-output :: (Bool,Int)
-output = runState composed 1
-
--- takes DA, input letter list, and initial state to output pair
-run :: DetAut l s -> [l] -> s -> (Bool, s)
-run = undefined
-
-autAccept :: DetAut l s -> [l] -> s -> Bool
-autAccept aut word initstate = fst $ run aut word initstate
-
-finalState :: DetAut l s -> [l] -> s -> s
-finalState aut word initstate = snd $ run aut word initstate
-
--- REGEX stuff
+-- REGEX definitions 
 
 data Regex l = Empty | Epsilon | L l | Alt (Regex l) (Regex l) | Seq (Regex l) (Regex l) | Star (Regex l) 
 
@@ -143,14 +108,16 @@ instance Eq l => Eq (Regex l) where
   (==) (Alt r r') (Alt r'' r''') = compsEq r r' r'' r'''
   (==) (Seq r r') (Seq r'' r''') = compsEq r r' r'' r'''
   (==) (Star r) (Star r') = r == r'
+  -- where
+  -- compsEq r r' r'' r''' = (r == r'' && r' == r''') || (r == r''' && r' == r'')
 
--- couldn't make the "where" notation work
+-- couldn't make the "where" notation work, but that would be preferable
 compsEq :: Eq a => a -> a -> a -> a -> Bool
 compsEq r r' r'' r''' = (r == r'' && r' == r''') || (r == r''' && r' == r'')
 
 instance Show l => Show (Regex l) where
-  show Empty = "∅"
-  show Epsilon = "ε"
+  show Empty = "EmptySet"
+  show Epsilon = "Epsilon"
   show (L a) = show a
   show (Star (Alt r r')) = "(" ++ (show r) ++ " + " ++ (show r') ++ ")*"
   show (Alt r r') = "(" ++ (show r) ++ " + " ++ (show r') ++ ")"
