@@ -16,6 +16,22 @@ The following uses the HSpec library to define different tests.
 Note that the first test is a specific test with fixed inputs.
 The second and third test use QuickCheck.
 
+Here is the example deterministic automaton that is below:
+\[\begin{tikzcd}
+	1 & 2 \\
+	3 & 4
+	\arrow["a", from=1-1, to=1-1, loop, in=105, out=165, distance=5mm]
+	\arrow["b", curve={height=-6pt}, from=1-1, to=1-2]
+	\arrow["c"', curve={height=6pt}, from=1-1, to=2-1]
+	\arrow["c", curve={height=-6pt}, from=1-2, to=1-1]
+	\arrow["b", from=1-2, to=1-2, loop, in=15, out=75, distance=5mm]
+	\arrow["a", from=1-2, to=2-2]
+	\arrow["a"', curve={height=6pt}, from=2-1, to=1-1]
+	\arrow["c", from=2-1, to=2-1, loop, in=195, out=255, distance=5mm]
+	\arrow["b"', from=2-1, to=2-2]
+	\arrow["{a,b,c}", from=2-2, to=2-2, loop, in=285, out=345, distance=5mm]
+\end{tikzcd}\]
+
 \begin{code}
 main :: IO ()
 main = hspec $ do
