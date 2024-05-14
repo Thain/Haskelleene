@@ -15,8 +15,8 @@ import Data.List
 allUnq:: Eq a => [a] -> Bool
 allUnq = f []
     where
-        f seen (x:xs) = not (x `elem` seen) && f (x:seen) xs
-        f seen [] = True
+        f seen (x:xs) = x `notElem` seen && f (x:seen) xs
+        f _ [] = True
 
 -- l is the type of our alphabet (most likely a finite set),
 -- s is the type of our states
@@ -33,22 +33,24 @@ data DetAut  l s = DA { states :: [s]
                       , delta :: l -> State s Bool }
 
 data NDetAut l s = NA { nstates :: [s]
-                      , ndelta :: (Maybe l) -> StateT s [] Bool }
+                      , ndelta :: Maybe l -> StateT s [] Bool }
 
 -- just a b c for now
 data Letter = A | B | C deriving (Eq, Ord)
 -- data Letter = A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z
+
+alphSize :: Int
 alphSize = 3
 
 -- can the data define a det automaton? (totality of transition)
 detCheck :: (Eq l, Eq s) => AutData l s -> Bool
-detCheck ad = length states == length (stateData ad) && allUnq states  -- all states are in transitionData exactly once
-              && and (map detCheckHelper stateTrs) where               -- check transitions for each letter exactly once
-  states = map fst $ transitionData ad
+detCheck ad = length sts == length (stateData ad) && allUnq sts  -- all states are in transitionData exactly once
+              && all detCheckHelper stateTrs where               -- check transitions for each letter exactly once
+  sts = map fst $ transitionData ad
   stateTrs = map snd $ transitionData ad
 
 detCheckHelper :: (Eq l, Eq s) => [(Maybe l,s)] -> Bool
-detCheckHelper trs = not (elem Nothing inputs)      -- no empty transitions
+detCheckHelper trs = notElem Nothing inputs      -- no empty transitions
                      && length inputs == alphSize   -- correct number of transitions
                      && allUnq inputs where         -- all state/letter pairs unique
   inputs = map fst trs
@@ -57,9 +59,9 @@ detCheckHelper trs = not (elem Nothing inputs)      -- no empty transitions
 encodeDA :: (Eq l, Eq s) => AutData l s -> Maybe (DetAut l s)
 encodeDA d | not $ detCheck d = Nothing
            | otherwise = Just $ DA { states = stateData d
-                                   , delta = \l -> StateT (stTrans l) } where
+                                   , delta = StateT . stTrans } where
                stTrans l s = return (calcV l s, calcS l s)
-               calcV l s = elem (calcS l s) (acceptData d)
+               calcV l s = calcS l s `elem` acceptData d
                calcS l s = fromJust $ lookup (Just l) $ fromJust (lookup s (transitionData d)) 
                
 -- make data into an NA (no need for safety check)
@@ -112,9 +114,9 @@ run :: DetAut l s -> [l] -> s -> (Bool, s)
 run = undefined
 
 accept :: DetAut l s -> [l] -> s -> Bool
-accept aut word init = fst $ run aut word init  
+accept aut word initstate = fst $ run aut word initstate
 
 finalState :: DetAut l s -> [l] -> s -> s
-finalState aut word init = snd $ run aut word init  
+finalState aut word initstate = snd $ run aut word initstate
 
 \end{code}
