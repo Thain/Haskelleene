@@ -31,36 +31,39 @@ data DetAut  l s = DA { states :: [s]
                       , delta :: l -> State s Bool }
 
 -- a typeclass for finite alphabets
-class Alphabet a where
-  alphIter :: [a] -> Bool
--- alphIter should check if the list contains exactly the elements of the type
+class Ord a => Alphabet a where
+  completeList :: [a]
 
+-- alphIter should check if the list contains exactly the elements of the type
+alphIter :: Alphabet a => [a] -> Bool
+alphIter l = sort l == completeList 
 
 -- just a b c for now
 data Letter = A | B | C deriving (Eq, Ord)
+
 instance Show Letter where
   show A = "a"
   show B = "b"
   show C = "c"
 
 instance Alphabet Letter where
-  alphIter ls = sort ls == [A,B,C] 
+  completeList = [A,B,C]
   
 -- data Letter = A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z
 
 -- can the data define a det automaton? (totality of transition)
-detCheck :: (Alphabet l, Eq l, Eq s) => AutData l s -> Bool
+detCheck :: (Alphabet l, Eq s) => AutData l s -> Bool
 detCheck ad = length sts == length (stateData ad) && allUnq sts  -- all states are in transitionData exactly once
               && all detCheckHelper stateTrs where               -- check transitions for each letter exactly once
-  sts = map fst $ transitionData ad
-  stateTrs = map snd $ transitionData ad
+  sts = fst <$> transitionData ad
+  stateTrs = snd <$> transitionData ad
 
-detCheckHelper :: (Alphabet l, Eq l, Eq s) => [(Maybe l,s)] -> Bool
-detCheckHelper trs = notElem Nothing (map fst trs)            -- no empty transitions
-                     && alphIter (map fromJust (map fst trs)) -- transition set is exactly the alphabet
+detCheckHelper :: (Alphabet l, Eq s) => [(Maybe l,s)] -> Bool
+detCheckHelper trs = notElem Nothing (map fst trs)        -- no empty transitions
+                     && alphIter (fromJust . fst <$> trs) -- transition set is exactly the alphabet
 
 -- contingent on passing safetyCheck, make data into a DA
-encodeDA :: (Alphabet l, Eq l, Eq s) => AutData l s -> Maybe (DetAut l s)
+encodeDA :: (Alphabet l, Eq s) => AutData l s -> Maybe (DetAut l s)
 encodeDA d | not $ detCheck d = Nothing
            | otherwise = Just $ DA { states = stateData d
                                    , accept = acceptData d
@@ -95,15 +98,16 @@ encodeNA d = NA { nstates = stateData d
 
 -- REGEX definitions 
 
-data Regex l = Empty | Epsilon | L l | Alt (Regex l) (Regex l) | Seq (Regex l) (Regex l) | Star (Regex l) 
+data Eq l => Regex l = Empty | Epsilon | L l | Alt (Regex l) (Regex l) | Seq (Regex l) (Regex l) | Star (Regex l)
+  deriving (Eq) 
 
-instance Eq l => Eq (Regex l) where
-  (==) Empty Empty = True
-  (==) Epsilon Epsilon = True
-  (==) (L l) (L l') = l == l'
-  (==) (Alt r r') (Alt r'' r''') = compsEq r r' r'' r'''
-  (==) (Seq r r') (Seq r'' r''') = compsEq r r' r'' r'''
-  (==) (Star r) (Star r') = r == r'
+-- instance Eq l => Eq (Regex l) where
+ --  (==) Empty Empty = True
+ --  (==) Epsilon Epsilon = True
+ --  (==) (L l) (L l') = l == l'
+ --  (==) (Alt r r') (Alt r'' r''') = compsEq r r' r'' r'''
+ --  (==) (Seq r r') (Seq r'' r''') = compsEq r r' r'' r'''
+ --  (==) (Star r) (Star r') = r == r'
   -- where
   -- compsEq r r' r'' r''' = (r == r'' && r' == r''') || (r == r''' && r' == r'')
 
