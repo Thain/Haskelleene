@@ -7,7 +7,6 @@ module Basics where
 
 import Control.Monad.State
 import Data.Maybe
-import Data.Functor.Identity
 import Data.List
 
 -- utility for checking if a list has duplicates
@@ -16,6 +15,9 @@ allUnq = f []
     where
         f seen (x:xs) = x `notElem` seen && f (x:seen) xs
         f _ [] = True
+
+getTrs :: (Eq a, Eq b) => [(a,[(b,a)])] -> a -> b -> [(b,a)]
+getTrs allTrs s0 ltr = filter (\x -> fst x == ltr) $ filter (\x -> fst x == s0) allTrs >>= snd
 
 -- l is the type of our alphabet (most likely a finite set),
 -- s is the type of our states
@@ -65,18 +67,21 @@ encodeDA d | not $ detCheck d = Nothing
            | otherwise = Just $ DA { states = stateData d
                                    , accept = acceptData d
                                    , delta = StateT . stTrans } where
-               stTrans l s = return (calcV l s, calcS l s)
-               calcV l s = calcS l s `elem` acceptData d
-               calcS l s = fromJust $ lookup (Just l) $ fromJust (lookup s (transitionData d)) 
+               stTrans ltr st = return (calcV ltr st, calcS ltr st)
+               calcV ltr st = calcS ltr st `elem` acceptData d
+               calcS ltr st = fromJust $ lookup (Just ltr) $ fromJust (lookup st (transitionData d)) 
+
+nothingTransition :: (Eq s) => DetAut l s -> State s Bool
+nothingTransition da = StateT $ \s -> return (elem s (accept da), s)
 
 -- takes DA, input letter list, and initial state to output pair
-run :: DetAut l s -> [l] -> s -> (Bool, s)
-run da w s0 = (`runState` s0) $ foldl' (>>) (pure False) (map (delta da) w) 
+run :: (Eq s) => DetAut l s -> [l] -> s -> (Bool, s)
+run da w s0 = (`runState` s0) $ foldl' (>>) (nothingTransition da) (map (delta da) w) 
 
-autAccept :: DetAut l s -> [l] -> s -> Bool
+autAccept :: (Eq s) => DetAut l s -> [l] -> s -> Bool
 autAccept da w s0 = fst $ run da w s0
 
-finalState :: DetAut l s -> [l] -> s -> s
+finalState :: (Eq s) => DetAut l s -> [l] -> s -> s
 finalState da w s0 = snd $ run da w s0
 
 -- NA definitions
@@ -88,10 +93,25 @@ data NDetAut l s = NA { nstates :: [s]
 
 
 -- make data into an NA (no need for safety check)
-encodeNA :: AutData l s -> NDetAut l s
+encodeNA :: (Alphabet l, Eq l, Eq s) => AutData l s -> NDetAut l s
 encodeNA d = NA { nstates = stateData d
                 , naccept = acceptData d
-                , ndelta = undefined }
+                , ndelta = StateT . stTrans } where
+  stTrans st ltr = zip (vals st ltr) (outSts st ltr)
+  vals st ltr = map (`elem` (acceptData d)) $ outSts st ltr
+  outSts st ltr = map snd $ getTrs (transitionData d) ltr st
+
+runNA :: NDetAut l s -> [l] -> s -> [(Bool, s)]
+runNA = undefined
+-- runNA na w s0 = (`runState` s0) $ foldl' (>>) (pure False) (map (delta na) w) 
+
+ndautAccept :: NDetAut l s -> [l] -> s -> Bool
+ndautAccept = undefined
+-- ndautAccept na w s0 = any $ runNA na w s0
+
+ndfinalStates :: NDetAut l s -> [l] -> s -> [s]
+ndfinalStates = undefined
+-- ndfinalStates na w s0 = snd $ runNA na w s0
 
 -- REGEX definitions 
 
@@ -102,8 +122,9 @@ instance Eq l => Eq (Regex l) where
   (==) Epsilon Epsilon = True
   (==) (L l) (L l') = l == l'
   (==) (Alt r r') (Alt r'' r''') = compsEq r r' r'' r'''
-  (==) (Seq r r') (Seq r'' r''') = compsEq r r' r'' r'''
+  (==) (Seq r r') (Seq r'' r''') = (r == r'') && (r' == r''')
   (==) (Star r) (Star r') = r == r'
+  (==) _ _ = False
   -- where
   -- compsEq r r' r'' r''' = (r == r'' && r' == r''') || (r == r''' && r' == r'')
 
@@ -120,6 +141,7 @@ instance Show l => Show (Regex l) where
   show (Seq r r') = (show r) ++ (show r')
   show (Star r) = "(" ++ (show r) ++ ")*"
 
+-- very simple regex simplifications (guaranteed to terminate or your money back)
 simplifyRegex :: Eq l => Regex l -> Regex l
 simplifyRegex rx = case rx of
                     (Alt Empty r) -> simplifyRegex r
@@ -127,8 +149,8 @@ simplifyRegex rx = case rx of
                     (Alt r r') | r == r' -> simplifyRegex r
                     (Seq r Epsilon) -> simplifyRegex r
                     (Seq Epsilon r) -> simplifyRegex r
-                    (Seq r Empty) -> Empty
-                    (Seq Empty r) -> Empty
+                    (Seq _ Empty) -> Empty
+                    (Seq Empty _) -> Empty
                     (Star Empty) -> Empty
                     (Star Epsilon) -> Epsilon
                     (Star (Star r)) -> simplifyRegex r
@@ -137,8 +159,8 @@ simplifyRegex rx = case rx of
 -- REGEX to DetAut
 -- Since regex to automata inducts on the transition functions, we need a way to glue or reshape our automata nicely
 regToAut :: Regex l -> AutData l Int
-regToAut (L l) = AD [1,2] [2] [(1, [(Just l,2)]), (1, [(Just l,2)])] 
-regToAut r = undefined
+regToAut = undefined
+-- regToAut (L l) = AD [1,2] [2] [(1, [(Just l,2)]), (1, [(Just l,2)])] 
 -- regToAut (Seq (L l) (L l')) = seqRegAut $ (regToAut (L l)) (regToAut (L l')) 
 
 seqRegAut :: AutData l Int -> AutData l Int -> AutData l Int
@@ -146,7 +168,8 @@ seqRegAut = undefined
 -- seqRegAut aut1 aut2 = AD [x | x <- stateData aut2 ]++[x*10 | x <- stateData aut2] [x | x <- acceptData] [(x*10, gluingStatesSeq x aut1 aut2 ) | x <- stateData aut1]
 
 gluingStatesSeq :: Int -> AutData l Int -> AutData l Int -> AutData l Int
-gluingStatesSeq  x aut1 aut2 = undefined
+gluingStatesSeq = undefined
+-- gluingStatesSeq  x aut1 aut2 = undefined
  -- | x `elem` acceptData aut1 = fromJust  (lookup x transitionData aut1)++(Epsilon, StartingState)
  -- |otherwise  fromJust  (lookup x transitionData aut1)
 
