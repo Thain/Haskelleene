@@ -1,3 +1,4 @@
+{-# LANGUAGE InstanceSigs #-}
 \section{The most basic library}\label{sec:Basics}
 
 This section describes a module which we will import later on.
@@ -59,7 +60,7 @@ detCheck ad = length sts == length (stateData ad) && allUnq sts  -- all states a
   stateTrs = snd <$> transitionData ad
 
 detCheckHelper :: (Alphabet l, Eq s) => [(Maybe l,s)] -> Bool
-detCheckHelper trs = notElem Nothing (map fst trs)        -- no empty transitions
+detCheckHelper trs = notElem Nothing (fst <$> trs)        -- no empty transitions
                      && alphIter (fromJust . fst <$> trs) -- transition set is exactly the alphabet
 
 -- contingent on passing safetyCheck, make data into a DA
@@ -74,7 +75,7 @@ encodeDA d | not $ detCheck d = Nothing
 
 -- takes DA, input letter list, and initial state to output pair
 run :: DetAut l s -> [l] -> s -> (Bool, s)
-run da w s0 = (`runState` s0) $ foldl' (>>) (pure False) (map (delta da) w) 
+run da w s0 = (`runState` s0) $ foldl' (>>) (pure False) (delta da <$> w) 
 
 autAccept :: DetAut l s -> [l] -> s -> Bool
 autAccept da w s0 = fst $ run da w s0
@@ -89,40 +90,43 @@ data NDetAut l s = NA { nstates :: [s]
                       , naccept :: [s]
                       , ndelta :: Maybe l -> StateT s [] Bool }
 
-
 -- make data into an NA (no need for safety check)
-encodeNA :: AutData l s -> NDetAut l s
+encodeNA :: (Alphabet l, Eq s) => AutData l s -> NDetAut l s
 encodeNA d = NA { nstates = stateData d
                 , naccept = acceptData d
-                , ndelta = undefined }
+                , ndelta = StateT . stTrans } where
+  stTrans st ltr = zip (vals st ltr) (outSts st ltr)
+  vals st ltr = (`elem` acceptData d) <$> outSts st ltr
+  outSts st ltr = undefined
+  -- getTrs is undefined
+  -- snd <$> getTrs (transitionData d) ltr st
+
+runNA :: NDetAut l s -> [l] -> s -> [(Bool, s)]
+runNA na w s0 = undefined
+
+ndautAccept :: NDetAut l s -> [l] -> s -> Bool
+ndautAccept na w s0 = any fst $ runNA na w s0
+
+ndfinalStates :: NDetAut l s -> [l] -> s -> [s]
+ndfinalStates na w s0 = snd <$> runNA na w s0
 
 -- REGEX definitions 
 
-data Eq l => Regex l = Empty | Epsilon | L l | Alt (Regex l) (Regex l) | Seq (Regex l) (Regex l) | Star (Regex l)
+data Regex l = Empty | 
+               Epsilon |
+               L l | 
+               Alt (Regex l) (Regex l) |
+               Seq (Regex l) (Regex l) | 
+               Star (Regex l)
   deriving (Eq) 
-
--- instance Eq l => Eq (Regex l) where
- --  (==) Empty Empty = True
- --  (==) Epsilon Epsilon = True
- --  (==) (L l) (L l') = l == l'
- --  (==) (Alt r r') (Alt r'' r''') = compsEq r r' r'' r'''
- --  (==) (Seq r r') (Seq r'' r''') = compsEq r r' r'' r'''
- --  (==) (Star r) (Star r') = r == r'
-  -- where
-  -- compsEq r r' r'' r''' = (r == r'' && r' == r''') || (r == r''' && r' == r'')
-
--- couldn't make the "where" notation work, but that would be preferable
-compsEq :: Eq a => a -> a -> a -> a -> Bool
-compsEq r r' r'' r''' = (r == r'' && r' == r''') || (r == r''' && r' == r'')
 
 instance Show l => Show (Regex l) where
   show Empty = "EmptySet"
   show Epsilon = "Epsilon"
   show (L a) = show a
-  show (Star (Alt r r')) = "(" ++ (show r) ++ " + " ++ (show r') ++ ")*"
-  show (Alt r r') = "(" ++ (show r) ++ " + " ++ (show r') ++ ")"
-  show (Seq r r') = (show r) ++ (show r')
-  show (Star r) = "(" ++ (show r) ++ ")*"
+  show (Alt r r') = "(" ++ show r ++ "|" ++ show r' ++ ")"
+  show (Seq r r') = show r ++ show r'
+  show (Star r) = "(" ++ show r ++ ")*"
 
 simplifyRegex :: Eq l => Regex l -> Regex l
 simplifyRegex rx = case rx of
@@ -131,11 +135,11 @@ simplifyRegex rx = case rx of
                     (Alt r r') | r == r' -> simplifyRegex r
                     (Seq r Epsilon) -> simplifyRegex r
                     (Seq Epsilon r) -> simplifyRegex r
-                    (Seq r Empty) -> Empty
-                    (Seq Empty r) -> Empty
+                    (Seq _ Empty) -> Empty
+                    (Seq Empty _) -> Empty
                     (Star Empty) -> Empty
                     (Star Epsilon) -> Epsilon
-                    (Star (Star r)) -> simplifyRegex r
+                    (Star (Star r)) -> simplifyRegex $ Star r
                     x -> x
 
 -- REGEX to DetAut
