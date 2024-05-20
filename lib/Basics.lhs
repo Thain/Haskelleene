@@ -136,19 +136,74 @@ simplifyRegex rx = case rx of
 
 -- REGEX to DetAut
 -- Since regex to automata inducts on the transition functions, we need a way to glue or reshape our automata nicely
+-- As we add more states we need to relable them. The base states are 1 and 2, multiplying by three is sequence, multiplying by 5 and 7 is Alt, multiplying by 11 is Star
 regToAut :: Regex l -> AutData l Int
 regToAut (L l) = AD [1,2] [2] [(1, [(Just l,2)]), (1, [(Just l,2)])] 
 regToAut r = undefined
--- regToAut (Seq (L l) (L l')) = seqRegAut $ (regToAut (L l)) (regToAut (L l')) 
+-- regToAut (Seq a b) = seqRegAut $ (regToAut a) (regToAut b)
+-- regToAut (Alt a b) = altRegAut $ (regToAut a) (regToAut b)
+-- regToAut (Star a) = starRegAut $ regToAut a
 
 seqRegAut :: AutData l Int -> AutData l Int -> AutData l Int
 seqRegAut = undefined
--- seqRegAut aut1 aut2 = AD [x | x <- stateData aut2 ]++[x*10 | x <- stateData aut2] [x | x <- acceptData] [(x*10, gluingStatesSeq x aut1 aut2 ) | x <- stateData aut1]
+-- seqRegAut aut1 aut2 = AD [x | x <- stateData aut2 ]++[x*3 | x <- stateData aut2] [x | x <- acceptData] [(x*3, gluingStatesSeq x aut1 aut2 ) | x <- stateData aut1]
 
+altRegAut :: AutData l Int -> AutData l Int -> AutData l Int
+-- segRegAut aut1 aut2 = AD [1,2]++[x*5| x<- stateData aut1]++[x*7| x<- stateData aut2]
+--                              [2] 
+--                              [(1,[(Nothing, s*5,7)| s<- StartingState aut1,aut2])]++[(x*5,(Nothing,2)++multTuple 5 (fromJust (lookup x transitionData aut1)] | x<- acceptData aut1,aut2]++[(x*5,multTuple 5 (fromJust (lookup x transitionData aut1) | x<-stateData aut1,aut2, x `notElem` acceptData aut1,aut2]
+
+starRegAut :: AutData l Int -> AutData l Int
+-- starRegAut aut = AD [1]++[x*11 | x<- stateData aut]
+--                     [1]
+--                     [1, [(Nothing, s*11) | s<- StartingState]]++[(x*11,(Nothing, 1)++multTuple 11 (fromJust (lookup x transitionData aut)] | x<- acceptData aut1]++[(x*11,multTuple 5 (fromJust (lookup x transitionData aut) | x<-stateData aut, x `notElem` acceptData aut]
+
+-- This function takes the first sequent and captures its original structure while updating the labels. The target states get connected by an empty transition to the
+--starting states of the second sequent.
 gluingStatesSeq :: Int -> AutData l Int -> AutData l Int -> AutData l Int
 gluingStatesSeq  x aut1 aut2 = undefined
- -- | x `elem` acceptData aut1 = fromJust  (lookup x transitionData aut1)++(Epsilon, StartingState)
- -- |otherwise  fromJust  (lookup x transitionData aut1)
+ -- | x `elem` acceptData aut1 = (multTuple 3 (fromJust  (lookup x transitionData aut1)))++(Nothing, StartingState)
+ -- |otherwise  fromJust  multTuple 3 (lookup x transitionData aut1)
 
+multTuple :: Int -> [(a,Int)] -> [(a,Int)]
+multTuple _ [] = []
+multTuple n (a,b):xs = (a,n*b):(multTuple n xs) 
+
+
+-- Take a collection of data and starting state, outputs a regular expression which corresponds to the language.
+autToReg :: Autdata l s -> [s] -> Regex
+autToReg = cleanAutomata . relableAut
+
+--following the Wikipedia page, this function recursively removes elements and uses the removed transition lables to construct the regex. 
+kleeneAlgo:: AutData l Int -> Int -> Int -> Regex l
+kleeneAlgo aut i j (-1) = if i==j then Alt Epsilon altSet [ l | l `elem` second fromJust (lookup i transitionData aut)] else altSet [ l | l `elem` second fromJust (lookup i transitionData aut)]
+kleeneAlgo aut i j k = Alt (kleeneAlgo i j (k-1)) (seqSet [(kleeneAlgo i j (k-1)), Star (kleeneAlgo i j (k-1)), (kleeneAlgo i j (k-1)) ])
+
+
+altSet:: [l]->Regex L
+altSet [] = Epsilon
+altSet (x:xs) = Seq x (seqSet xs)
+
+-- states as integer makes everything easier 
+relableAut :: Autdata l s -> Autdata l Int
+relableAut aut = undefined
+
+relableHelper :: [s]->[s]->[(s,[(Maybe l,s)])]->[Int]->[Int]->[(Int, [(Maybe l, Either s Int)])]->Int->[s]->[s]->[(s,[(Maybe l,s)])]->[Int]->[Int]->[(Int, [(Maybe l, Either s Int)])]
+relableHelper :: _ [] _ _ _ _ _ = return yadayada
+relableHelper acc (s:ss) trans intAcc intState intTrans n = do 
+ let newIntState = n:intState
+ let newN = n+1
+ let newIntAcc = if s `elem` acc then n:intAcc else intAcc
+ let newAcc = if s `elem` acc then filter (/= s) acc else acc
+ let newIntTrans = undefined
+ let newTrans = filter (\w -> (first w)==s) trans
+ relableHelper newAcc ss newTrans newIntAcc newIntState newIntState newN
+
+-- take aut data and make a nice start state/end state
+cleanAutomata:: Autdata l Int -> s -> AutData l Int -> s
+cleanAutomata aut s = AD sum acceptData aut
+                         0:(stateData aut)
+                         [(w, if w `elem` acceptData aut then (Nothing, sum acceptData aut):(fromJust (lookup w transitionData aut)) else fromJust (lookup w transitionData aut) ) | w <- stateData aut]++ [0,[(Nothing, x) | x<-s]]
+                       
 \end{code}
 
