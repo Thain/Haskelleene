@@ -172,7 +172,7 @@ multTuple n (a,b):xs = (a,n*b):(multTuple n xs)
 
 -- Take a collection of data and starting state, outputs a regular expression which corresponds to the language.
 autToReg :: Autdata l s -> [s] -> Regex
-autToReg = cleanAutomata . relableAut
+autToReg aut [s]= kleeneAlgo newAut 0 (length stateData aut) (length stateData aut) where newAut = cleanAutomata . relableAut aut
 
 --following the Wikipedia page, this function recursively removes elements and uses the removed transition lables to construct the regex. 
 kleeneAlgo:: AutData l Int -> Int -> Int -> Regex l
@@ -201,9 +201,9 @@ relableHelper acc (s:ss) trans intAcc intState intTrans n = do
 
 -- take aut data and make a nice start state/end state
 cleanAutomata:: Autdata l Int -> s -> AutData l Int -> s
-cleanAutomata aut s = AD sum acceptData aut
+cleanAutomata aut s = AD length acceptData aut
                          0:(stateData aut)
-                         [(w, if w `elem` acceptData aut then (Nothing, sum acceptData aut):(fromJust (lookup w transitionData aut)) else fromJust (lookup w transitionData aut) ) | w <- stateData aut]++ [0,[(Nothing, x) | x<-s]]
+                         [(w, if w `elem` acceptData aut then (Nothing, length acceptData aut):(fromJust (lookup w transitionData aut)) else fromJust (lookup w transitionData aut) ) | w <- stateData aut]++ [0,[(Nothing, x) | x<-s]]
                        
 \end{code}
 
