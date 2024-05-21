@@ -31,7 +31,7 @@ data AutData l s = AD { stateData :: [s]
 -- "State s Bool" is "s -> (Bool,s)"
 data DetAut  l s = DA { states :: [s]
                       , accept :: [s]
-                      , delta :: l -> State s Bool }
+                      , delta :: l -> s -> s }
 
 -- a typeclass for finite alphabets
 class Ord a => Alphabet a where
@@ -51,8 +51,7 @@ instance Show Letter where
 
 instance Alphabet Letter where
   completeList = [A,B,C]
-  
--- data Letter = A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z
+  -- data Letter = A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z
 
 -- can the data define a det automaton? (totality of transition)
 detCheck :: (Alphabet l, Eq s) => AutData l s -> Bool
@@ -70,23 +69,15 @@ encodeDA :: (Alphabet l, Eq s) => AutData l s -> Maybe (DetAut l s)
 encodeDA d | not $ detCheck d = Nothing
            | otherwise = Just $ DA { states = stateData d
                                    , accept = acceptData d
-                                   , delta = StateT . stTrans } where
-               stTrans ltr st = return (calcV ltr st, calcS ltr st)
-               calcV ltr st = calcS ltr st `elem` acceptData d
-               calcS ltr st = fromJust $ lookup (Just ltr) $ fromJust (lookup st (transitionData d)) 
-
-nothingTransition :: (Eq s) => DetAut l s -> State s Bool
-nothingTransition da = StateT $ \s -> return (elem s (accept da), s)
+                                   , delta = safeDelta } where
+               safeDelta ltr st = fromJust $ lookup (Just ltr) $ fromJust (lookup st (transitionData d)) 
 
 -- takes DA, input letter list, and initial state to output pair
-run :: DetAut l s -> [l] -> s -> (Bool, s)
-run da w s0 = (`runState` s0) $ foldl' (>>) (pure False) (delta da <$> w) 
+run :: DetAut l s -> s -> [l] -> s
+run da s0 w = ( $ s0) $ foldr (.) id (map (delta da) w)
 
-autAccept :: (Eq s) => DetAut l s -> [l] -> s -> Bool
-autAccept da w s0 = fst $ run da w s0
-
-finalState :: (Eq s) => DetAut l s -> [l] -> s -> s
-finalState da w s0 = snd $ run da w s0
+acceptDA :: (Eq s) => DetAut l s -> s -> [l] -> Bool
+acceptDA da s0 w = (run da s0 w) `elem` (accept da)
 
 -- NA definitions
 
@@ -102,18 +93,19 @@ encodeNA d = NA { nstates = stateData d
                 , ndelta = StateT . stTrans } where
   stTrans st ltr = zip (vals st ltr) (outSts st ltr)
   vals st ltr = (`elem` acceptData d) <$> outSts st ltr
-  outSts st ltr = undefined
-  -- getTrs is undefined
-  -- snd <$> getTrs (transitionData d) ltr st
+  outSts st ltr = snd <$> getTrs (transitionData d) ltr st
 
+-- here word first to keep nice state-composability of this function.
+-- below, for the convenience functions, we'll do the initial state
+-- and then the word input after, because it makes more intuitive sense.
 runNA :: NDetAut l s -> [l] -> s -> [(Bool, s)]
 runNA na w s0 = undefined
 
-ndautAccept :: NDetAut l s -> [l] -> s -> Bool
-ndautAccept na w s0 = any fst $ runNA na w s0
+ndautAccept :: NDetAut l s -> s -> [l] -> Bool
+ndautAccept na s0 w = any fst $ runNA na w s0
 
-ndfinalStates :: NDetAut l s -> [l] -> s -> [s]
-ndfinalStates na w s0 = snd <$> runNA na w s0
+ndfinalStates :: NDetAut l s -> s -> [l] -> [s]
+ndfinalStates na s0 w = snd <$> runNA na w s0
 
 -- REGEX definitions 
 
