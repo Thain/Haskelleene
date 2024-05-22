@@ -152,6 +152,14 @@ ndautAccept na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $
 ndfinalStates :: NDetAut l s -> s -> [l] -> [s]
 ndfinalStates na s0 w = snd <$> runNA na s0 w
 
+-- trivial forgetful DA -> NA
+fromDA :: (Alphabet l) => DetAut l s -> NDetAut l s
+fromDA da = NA { nstates = states da
+               , naccept = accept da
+               , ndelta = newDelta } where
+  newDelta Nothing st = []
+  newDelta (Just l) st = [(delta da) l st]
+
 -- The Power-set Construction: NA -> DA 
 fromNA :: (Alphabet l, Ord s) => NDetAut l s -> DetAut l (Set.Set s)
 fromNA nda = DA { states = Set.toList dasts
