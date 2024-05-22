@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE InstanceSigs #-}
 \section{The most basic library}\label{sec:Basics}
 
 This section describes a module which we will import later on.
@@ -9,6 +10,8 @@ module Basics where
 -- import Control.Monad.State
 import Data.Maybe
 import Data.List
+import qualified Data.Set as Set
+import Test.QuickCheck
 
 -- utility for checking if a list has duplicates
 allUnq:: Eq a => [a] -> Bool
@@ -44,6 +47,9 @@ alphIter l = sort l == completeList
 -- just a b c for now
 data Letter = A | B | C deriving (Eq, Ord)
 
+instance Arbitrary Letter where
+  arbitrary = elements [A,B,C]
+
 instance Show Letter where
   show A = "a"
   show B = "b"
@@ -78,7 +84,8 @@ encodeDA d | not $ detCheck d = Nothing
 
 -- takes DA, input letter list, and initial state to output pair
 run :: DetAut l s -> s -> [l] -> s
-run da s0 w = ($ s0) $ foldr ((.) . delta da) id w
+run _ s0 [] = s0
+run da s0 (w:ws) = run da (delta da w s0) ws
 
 acceptDA :: (Eq s) => DetAut l s -> s -> [l] -> Bool
 acceptDA da s0 w = run da s0 w `elem` accept da
@@ -127,6 +134,36 @@ ndautAccept na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $
 
 ndfinalStates :: NDetAut l s -> s -> [l] -> [s]
 ndfinalStates na s0 w = snd <$> runNA na s0 w
+
+-- NA -> DA transition
+
+fromNA :: (Alphabet l, Ord s) => NDetAut l s -> DetAut l (Set.Set s)
+fromNA nda = DA { states = Set.toList dasts
+                , accept = Set.toList $ Set.filter acchelp dasts
+                , delta = fromTransNA ntrans
+                }
+  where ndasts = nstates nda
+        dasts  = Set.powerSet $ Set.fromList ndasts
+        ndaacc = naccept nda
+        acchelp set = not $ Set.disjoint set $ Set.fromList ndaacc
+        ntrans = ndelta nda
+
+epReachable :: (Alphabet l, Ord s) => (Maybe l -> s -> [s]) -> s -> [s]
+epReachable ntrans st = st : concatMap (epReachable ntrans) 
+                                       (ntrans Nothing st)
+
+listUnions :: (Ord s) => (s -> [s]) -> Set.Set s -> Set.Set s
+listUnions f input = Set.unions $ Set.map Set.fromList $ Set.map f input
+
+fromTransNA :: (Alphabet l, Ord s) => (Maybe l -> s -> [s]) -> 
+                                      l -> Set.Set s -> Set.Set s
+fromTransNA ntrans sym set = result
+  where starts = listUnions (epReachable ntrans) set
+        result = listUnions (ntrans $ Just sym) starts
+
+fromStartNA :: (Alphabet l, Ord s) => NDetAut l s -> s -> Set.Set s
+fromStartNA nda st = Set.fromList $ epReachable ntrans st
+  where ntrans = ndelta nda
 
 -- REGEX definitions 
 

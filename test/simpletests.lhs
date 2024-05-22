@@ -8,8 +8,9 @@ module Main where
 
 import Data.Maybe
 import Test.Hspec
--- import Test.QuickCheck
+import Test.QuickCheck
 import Basics
+
 \end{code}
 
 The following uses the HSpec library to define different tests.
@@ -46,6 +47,11 @@ main = hspec $ do
     it "NA test run result 2 should be ([([],1),([],2),([],4)], False)" $
       myNTestRunTrue `shouldBe` 
       ([([],1),([],2),([],4)], True)
+    it "NA and transfer to DA should give the same result" $
+      property $ \input -> ndautAccept myNDA 1 input == 
+                           acceptDA (fromNA myNDA) 
+                                    (fromStartNA myNDA 1) 
+                                    input
 
 myAutData :: AutData Letter Int
 myAutData = AD [1,2,3,4]        -- the states

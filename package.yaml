@@ -15,7 +15,9 @@ dependencies:
 
 library:
   source-dirs: lib
-  # dependencies:
+  dependencies:
+    - containers
+    - QuickCheck
   #   - mtl
 
 executables:
