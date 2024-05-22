@@ -120,19 +120,19 @@ encodeNA d | not $ ndetCheck d = Nothing
                         Nothing -> []
                         Just ls -> [ st' | (sym', st') <- ls, sym' == sym ]
 
-decodeNA :: (Alphabet l, Eq s) => NDetAut l s -> AutData l s
-decodeNA nda = AD { stateData = sts
+-- put an NA back into autdata, e.g. to turn it into regex
+decode :: (Alphabet l, Eq s) => NDetAut l s -> AutData l s
+decode nda = AD { stateData = sts
                   , acceptData = naccept nda
                   , transitionData = trandata
                   }
   where sts = nstates nda
         ntrans = ndelta nda
         symlist = Nothing : (Just <$> completeList)
-        trandata = graph help sts
-          where help st = concatMap (\sym -> (sym,) <$> ntrans sym st) symlist
-
-graph :: (a -> b) -> [a] -> [(a,b)]
-graph f as = zip as $ f <$> as
+        trandata = graph help sts -- where ...
+        help st = concatMap (\sym -> (sym,) <$> ntrans sym st) symlist
+        graph f as = zip as $ f <$> as
+-- graph :: (a -> b) -> [a] -> [(a,b)]
 
 runNA :: NDetAut l s  -> s -> [l] -> [([l], s)]
 runNA na st input = 
