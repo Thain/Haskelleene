@@ -6,7 +6,7 @@ This section describes a module which we will import later on.
 \begin{code}
 module Basics where
 
-import Control.Monad.State
+-- import Control.Monad.State
 import Data.Maybe
 import Data.List
 
@@ -55,14 +55,18 @@ instance Alphabet Letter where
 
 -- can the data define a det automaton? (totality of transition)
 detCheck :: (Alphabet l, Eq s) => AutData l s -> Bool
-detCheck ad = length sts == length (stateData ad) && allUnq sts  -- all states are in transitionData exactly once
-              && all detCheckHelper stateTrs where               -- check transitions for each letter exactly once
+detCheck ad = length sts == length (stateData ad) && allUnq sts 
+              -- all states are in transitionData exactly once
+              && all detCheckHelper stateTrs where              
+              -- check transitions for each letter exactly once
   sts = fst <$> transitionData ad
   stateTrs = snd <$> transitionData ad
 
 detCheckHelper :: (Alphabet l, Eq s) => [(Maybe l,s)] -> Bool
-detCheckHelper trs = notElem Nothing (fst <$> trs)        -- no empty transitions
-                     && alphIter (fromJust . fst <$> trs) -- transition set is exactly the alphabet
+detCheckHelper trs = notElem Nothing (fst <$> trs)        
+                     -- no empty transitions
+                     && alphIter (fromJust . fst <$> trs) 
+                     -- transition set is exactly the alphabet
 
 -- contingent on passing safetyCheck, make data into a DA
 encodeDA :: (Alphabet l, Eq s) => AutData l s -> Maybe (DetAut l s)
@@ -74,38 +78,55 @@ encodeDA d | not $ detCheck d = Nothing
 
 -- takes DA, input letter list, and initial state to output pair
 run :: DetAut l s -> s -> [l] -> s
-run da s0 w = ( $ s0) $ foldr (.) id (map (delta da) w)
+run da s0 w = ($ s0) $ foldr ((.) . delta da) id w
 
 acceptDA :: (Eq s) => DetAut l s -> s -> [l] -> Bool
-acceptDA da s0 w = (run da s0 w) `elem` (accept da)
+acceptDA da s0 w = run da s0 w `elem` accept da
 
 -- NA definitions
 
 -- "StateT s [] Bool" is "s -> [(Bool,s)]"
 data NDetAut l s = NA { nstates :: [s]
                       , naccept :: [s]
-                      , ndelta :: Maybe l -> StateT s [] Bool }
+                      , ndelta :: Maybe l -> s -> [s] }
+
+-- check the data can define an nondeterministic automaton:
+ndetCheck :: (Alphabet l, Eq s) => AutData l s -> Bool
+ndetCheck ad = allUnq sts &&
+               -- all states are in transitionData exactly once
+               all (\(st,trs) -> (Nothing,st) `notElem` trs) trdata
+               -- no epsilon self-loop
+  where trdata = transitionData ad 
+        sts = fst <$> trdata
 
 -- make data into an NA (no need for safety check)
-encodeNA :: (Alphabet l, Eq s) => AutData l s -> NDetAut l s
-encodeNA d = NA { nstates = stateData d
-                , naccept = acceptData d
-                , ndelta = StateT . stTrans } where
-  stTrans st ltr = zip (vals st ltr) (outSts st ltr)
-  vals st ltr = (`elem` acceptData d) <$> outSts st ltr
-  outSts st ltr = snd <$> getTrs (transitionData d) ltr st
+encodeNA :: (Alphabet l, Eq s) => AutData l s -> Maybe (NDetAut l s)
+encodeNA d | not $ ndetCheck d = Nothing
+           | otherwise         = Just $
+  NA { nstates = stateData d
+     , naccept = acceptData d
+     , ndelta = help }
+  where help sym st = case lookup st (transitionData d) of
+                        Nothing -> []
+                        Just ls -> [ st' | (sym', st') <- ls, sym' == sym ]
 
--- here word first to keep nice state-composability of this function.
--- below, for the convenience functions, we'll do the initial state
--- and then the word input after, because it makes more intuitive sense.
-runNA :: NDetAut l s -> [l] -> s -> [(Bool, s)]
-runNA na w s0 = undefined
+runNA :: NDetAut l s  -> s -> [l] -> [([l], s)]
+runNA na st input = 
+  case input of
+    [] -> ([],st) : concatMap (\s -> runNA na s input) nsucc
+    (w:ws) -> case wsucc of
+                [] -> (input,st) : concatMap (\s -> runNA na s input) nsucc
+                ls -> concatMap (\s -> runNA na s ws) ls ++ 
+                      concatMap (\s -> runNA na s input) nsucc
+      where wsucc = ndelta na (Just w) st
+    where   nsucc = ndelta na Nothing  st
 
-ndautAccept :: NDetAut l s -> s -> [l] -> Bool
-ndautAccept na s0 w = any fst $ runNA na w s0
+ndautAccept :: (Alphabet l, Eq s) => NDetAut l s -> s -> [l] -> Bool
+ndautAccept na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $
+                      runNA na s0 w
 
 ndfinalStates :: NDetAut l s -> s -> [l] -> [s]
-ndfinalStates na s0 w = snd <$> runNA na w s0
+ndfinalStates na s0 w = snd <$> runNA na s0 w
 
 -- REGEX definitions 
 

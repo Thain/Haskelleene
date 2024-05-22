@@ -25,7 +25,6 @@ library
   build-depends:
       QuickCheck
     , base
-    , mtl
     , random
   default-language: Haskell2010
 

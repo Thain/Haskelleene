@@ -15,8 +15,8 @@ dependencies:
 
 library:
   source-dirs: lib
-  dependencies:
-    - mtl
+  # dependencies:
+  #   - mtl
 
 executables:
   myprogram:
