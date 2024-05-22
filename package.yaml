@@ -16,7 +16,9 @@ dependencies:
 library:
   source-dirs: lib
   dependencies:
-    - mtl
+    - containers
+    - QuickCheck
+  #   - mtl
 
 executables:
   myprogram:
