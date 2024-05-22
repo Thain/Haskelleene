@@ -152,8 +152,7 @@ ndautAccept na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $
 ndfinalStates :: NDetAut l s -> s -> [l] -> [s]
 ndfinalStates na s0 w = snd <$> runNA na s0 w
 
--- NA -> DA transition
-
+-- The Power-set Construction: NA -> DA 
 fromNA :: (Alphabet l, Ord s) => NDetAut l s -> DetAut l (Set.Set s)
 fromNA nda = DA { states = Set.toList dasts
                 , accept = Set.toList $ Set.filter acchelp dasts
@@ -169,20 +168,21 @@ epReachable :: (Alphabet l, Ord s) => (Maybe l -> s -> [s]) -> s -> [s]
 epReachable ntrans st = st : concatMap (epReachable ntrans) 
                                        (ntrans Nothing st)
 
-listUnions :: (Ord s) => (s -> [s]) -> Set.Set s -> Set.Set s
-listUnions f input = Set.unions $ Set.map Set.fromList $ Set.map f input
-
 fromTransNA :: (Alphabet l, Ord s) => (Maybe l -> s -> [s]) -> 
                                       l -> Set.Set s -> Set.Set s
 fromTransNA ntrans sym set = result
   where starts = listUnions (epReachable ntrans) set
         result = listUnions (ntrans $ Just sym) starts
+        listUnions f input = Set.unions $ Set.map Set.fromList $ Set.map f input
+-- listUnions :: (Ord s) => (s -> [s]) -> Set.Set s -> Set.Set s
 
 fromStartNA :: (Alphabet l, Ord s) => NDetAut l s -> s -> Set.Set s
 fromStartNA nda st = Set.fromList $ epReachable ntrans st
   where ntrans = ndelta nda
 
+-- -----------------
 -- REGEX definitions 
+-- -----------------
 
 data Regex l = Empty | 
                Epsilon |
@@ -304,6 +304,10 @@ gluingStar (aut1, s1) = start ++ middle ++ end where
 multTuple :: Int -> [(a,Int)] -> [(a,Int)]
 multTuple _ [] = []
 multTuple n ((a,b):xs) = (a,n*b) : multTuple n xs
+
+-- -----------------------------
+-- Automaton to Regex Conversion
+-- -----------------------------
 
 -- Take a collection of data and starting states, outputs a regular expression which corresponds to the language.
 autToReg :: Eq l => Ord s => (AutData l s, s)-> Regex l
