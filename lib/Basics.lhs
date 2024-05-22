@@ -190,15 +190,31 @@ data Regex l = Empty |
                Alt (Regex l) (Regex l) |
                Seq (Regex l) (Regex l) | 
                Star (Regex l)
-  deriving (Eq) 
+  deriving (Eq)
 
 instance Show l => Show (Regex l) where
   show Empty = "EmptySet"
   show Epsilon = "Epsilon"
   show (L a) = show a
-  show (Alt r r') = "(" ++ show r ++ "|" ++ show r' ++ ")"
+  show (Alt r r') = show r ++ "+" ++ show r'
+  show (Seq (Alt r r') r'') = "(" ++ show r ++ "+" ++ show r' ++ ")" ++ show r''
+  show (Seq r'' (Alt r r')) = show r'' ++ "(" ++ show r ++ "+" ++ show r' ++ ")"
   show (Seq r r') = show r ++ show r'
   show (Star r) = "(" ++ show r ++ ")*"
+
+seqList :: [Regex l] -> Regex l
+seqList [l] = l
+seqList (l:ls) = Seq l $ seqList ls
+seqList [] = Epsilon
+
+altList :: [Regex l] -> Regex l
+altList [l] = l
+altList (l:ls) = Alt l $ altList ls
+altList [] = Empty
+
+seqList', altList' :: [l] -> Regex l
+seqList' = seqList . (map L)
+altList' = altList . (map L)
 
 -- very simple regex simplifications (guaranteed to terminate or your money back)
 simplifyRegex :: Eq l => Regex l -> Regex l
