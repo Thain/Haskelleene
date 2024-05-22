@@ -58,7 +58,7 @@ main = hspec $ do
 
 updateNA :: (NDetAut Letter Int,Int) -> (NDetAut Letter Int,Int)
 updateNA (nda, s) = (newNDA, s0)
-  where (newdata, s0) = regToAut $ autToReg (decodeNA nda,s)
+  where (newdata, s0) = regToAut $ autToReg (decode nda,s)
         newNDA = fromJust $ encodeNA newdata
 
 myAutData :: AutData Letter Int
@@ -129,6 +129,14 @@ exampleRegex = Star (Alt (L A) (L B))
 
 annoyingRegex :: Regex Letter
 annoyingRegex = Alt Empty (Seq Epsilon (L A))
+
+-- examples
+abc,abca,aOrbc :: Regex Letter
+abc = seqList' [A,B,C]
+abca = seqList' [A,B,C,A]
+aOrbc = Seq abc $ Star (Alt (L A) (Seq (L B) (L C)))
+
+
 
 \end{code}
 

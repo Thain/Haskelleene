@@ -157,7 +157,7 @@ fromDA :: (Alphabet l) => DetAut l s -> NDetAut l s
 fromDA da = NA { nstates = states da
                , naccept = accept da
                , ndelta = newDelta } where
-  newDelta Nothing st = []
+  newDelta Nothing _ = []
   newDelta (Just l) st = [(delta da) l st]
 
 -- The Power-set Construction: NA -> DA 
@@ -273,11 +273,6 @@ regexAccept (Star r) cs = any ((regexAccept (Star r)) . snd) (initCheck r cs)
 -- get all initial sequences of the word that match the regex
 initCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
 initCheck r w = filter ((regexAccept r) . fst) (splits w)
-
--- examples
-abc = seqList' [A,B,C]
-abca = seqList' [A,B,C,A]
-aOrbc = Seq abc $ Star (Alt (L A) (Seq (L B) (L C)))
 
 -- utility functions
 
