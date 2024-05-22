@@ -9,6 +9,8 @@ import Control.Monad.State
 import Data.Maybe
 import Data.Functor.Identity
 import Data.List
+import qualified Data.Map.Strict as Map
+
 
 -- utility for checking if a list has duplicates
 allUnq:: Eq a => [a] -> Bool
@@ -23,6 +25,7 @@ allUnq = f []
 data AutData l s = AD { stateData :: [s] 
                       , acceptData :: [s] 
                       , transitionData :: [(s, [(Maybe l, s)])] }
+                      deriving Show
 
 -- recall:
 -- "State s Bool" is "s -> (Bool,s)"
@@ -95,21 +98,13 @@ encodeNA d = NA { nstates = stateData d
 
 -- REGEX definitions 
 
-data Regex l = Empty | Epsilon | L l | Alt (Regex l) (Regex l) | Seq (Regex l) (Regex l) | Star (Regex l) 
-
-instance Eq l => Eq (Regex l) where
-  (==) Empty Empty = True
-  (==) Epsilon Epsilon = True
-  (==) (L l) (L l') = l == l'
-  (==) (Alt r r') (Alt r'' r''') = compsEq r r' r'' r'''
-  (==) (Seq r r') (Seq r'' r''') = compsEq r r' r'' r'''
-  (==) (Star r) (Star r') = r == r'
-  -- where
-  -- compsEq r r' r'' r''' = (r == r'' && r' == r''') || (r == r''' && r' == r'')
-
--- couldn't make the "where" notation work, but that would be preferable
-compsEq :: Eq a => a -> a -> a -> a -> Bool
-compsEq r r' r'' r''' = (r == r'' && r' == r''') || (r == r''' && r' == r'')
+data Regex l = Empty | 
+               Epsilon |
+               L l | 
+               Alt (Regex l) (Regex l) |
+               Seq (Regex l) (Regex l) | 
+               Star (Regex l)
+  deriving (Eq) 
 
 instance Show l => Show (Regex l) where
   show Empty = "EmptySet"
@@ -120,6 +115,7 @@ instance Show l => Show (Regex l) where
   show (Seq r r') = (show r) ++ (show r')
   show (Star r) = "(" ++ (show r) ++ ")*"
 
+-- very simple regex simplifications (guaranteed to terminate or your money back)
 simplifyRegex :: Eq l => Regex l -> Regex l
 simplifyRegex rx = case rx of
                     (Alt Empty r) -> simplifyRegex r
@@ -127,83 +123,142 @@ simplifyRegex rx = case rx of
                     (Alt r r') | r == r' -> simplifyRegex r
                     (Seq r Epsilon) -> simplifyRegex r
                     (Seq Epsilon r) -> simplifyRegex r
-                    (Seq r Empty) -> Empty
-                    (Seq Empty r) -> Empty
+                    (Seq _ Empty) -> Empty
+                    (Seq Empty _) -> Empty
                     (Star Empty) -> Empty
                     (Star Epsilon) -> Epsilon
-                    (Star (Star r)) -> simplifyRegex r
+                    (Star (Star r)) -> simplifyRegex $ Star r
+                    (Star (Alt Empty r)) -> simplifyRegex r
+                    (Star (Alt r Empty)) -> simplifyRegex r
+                    (Star (Seq Epsilon r)) -> simplifyRegex r
+                    (Star (Seq r Epsilon)) -> simplifyRegex r
                     x -> x
 
 -- REGEX to DetAut
 -- Since regex to automata inducts on the transition functions, we need a way to glue or reshape our automata nicely
--- As we add more states we need to relable them. The base states are 1 and 2, multiplying by three is sequence, multiplying by 5 and 7 is Alt, multiplying by 11 is Star
-regToAut :: Regex l -> AutData l Int
-regToAut (L l) = AD [1,2] [2] [(1, [(Just l,2)]), (1, [(Just l,2)])] 
-regToAut r = undefined
--- regToAut (Seq a b) = seqRegAut $ (regToAut a) (regToAut b)
--- regToAut (Alt a b) = altRegAut $ (regToAut a) (regToAut b)
--- regToAut (Star a) = starRegAut $ regToAut a
+-- As we add more states we need to relable them. The base states are 1 and 2, multiplying by 3 is sequence, multiplying by 5 and 7 is Alt, multiplying by 11 is Star
 
-seqRegAut :: AutData l Int -> AutData l Int -> AutData l Int
-seqRegAut = undefined
--- seqRegAut aut1 aut2 = AD [x | x <- stateData aut2 ]++[x*3 | x <- stateData aut2] [x | x <- acceptData] [(x*3, gluingStatesSeq x aut1 aut2 ) | x <- stateData aut1]
+--useful function to glue states together
+transForState :: Eq s => AutData l s -> s -> [(Maybe l, s)]
+transForState aut s 
+ | isNothing (lookup s (transitionData aut)) =[]
+ | otherwise = fromJust (lookup s (transitionData aut))
 
-altRegAut :: AutData l Int -> AutData l Int -> AutData l Int
--- segRegAut aut1 aut2 = AD [1,2]++[x*5| x<- stateData aut1]++[x*7| x<- stateData aut2]
---                              [2] 
---                              [(1,[(Nothing, s*5,7)| s<- StartingState aut1,aut2])]++[(x*5,(Nothing,2)++multTuple 5 (fromJust (lookup x transitionData aut1)] | x<- acceptData aut1,aut2]++[(x*5,multTuple 5 (fromJust (lookup x transitionData aut1) | x<-stateData aut1,aut2, x `notElem` acceptData aut1,aut2]
+-- For each operator we define two corresponding functions. One outputs the automata data associated with that operator, 
+-- the other stitches and modifies the transition function across the inputs automata (mostly using Epsilon transitions)
 
-starRegAut :: AutData l Int -> AutData l Int
--- starRegAut aut = AD [1]++[x*11 | x<- stateData aut]
---                     [1]
---                     [1, [(Nothing, s*11) | s<- StartingState]]++[(x*11,(Nothing, 1)++multTuple 11 (fromJust (lookup x transitionData aut)] | x<- acceptData aut1]++[(x*11,multTuple 5 (fromJust (lookup x transitionData aut) | x<-stateData aut, x `notElem` acceptData aut]
+regToAut :: Regex l -> (AutData l Int, Int) -- gives an integer automata and a starting state
+regToAut (L l) = (AD [1,2] [2] [(1, [(Just l,2)]), (1, [(Just l,2)])], 1) 
+regToAut Empty = (AD [1,2] [2] [], 1)
+regToAut Epsilon = (AD [1,2] [2] [(1, [(Nothing, 2)])], 1)
+regToAut (Seq a b) = seqRegAut  (regToAut a) (regToAut b)
+regToAut (Alt a b) = altRegAut  (regToAut a) (regToAut b)
+regToAut (Star a) = starRegAut $ regToAut a
 
--- This function takes the first sequent and captures its original structure while updating the labels. The target states get connected by an empty transition to the
---starting states of the second sequent.
-gluingStatesSeq :: Int -> AutData l Int -> AutData l Int -> AutData l Int
-gluingStatesSeq  x aut1 aut2 = undefined
- -- | x `elem` acceptData aut1 = (multTuple 3 (fromJust  (lookup x transitionData aut1)))++(Nothing, StartingState)
- -- |otherwise  fromJust  multTuple 3 (lookup x transitionData aut1)
+seqRegAut :: (AutData l Int, Int) -> (AutData l Int, Int) -> (AutData l Int, Int)
+seqRegAut (aut1,s1) (aut2,s2) = (AD ([x | x <- stateData aut1 ]++[x*3 | x <- stateData aut2])
+                                    [3*x | x <- acceptData aut2] 
+                                    (gluingSeq (aut1, s1) (aut2, s2))
+                                    , s2)
+
+
+gluingSeq :: (AutData l Int, Int)->(AutData l Int, Int) -> [(Int, [(Maybe l, Int)])]
+gluingSeq (aut1, s1) (aut2, s2) =  firstAut ++ middle ++secondAut where
+ firstAut = [(x, transForState aut1 x) | x<- stateData aut1, x `notElem` acceptData aut1]
+ middle = [(x, (transForState aut1 x)++[(Nothing, 3*s2)]) | x<- acceptData aut1]
+ secondAut = [(x*3, multTuple 3 (transForState aut2 x)) | x<- stateData aut2]
+
+altRegAut :: (AutData l Int, Int) -> (AutData l Int, Int) -> (AutData l Int, Int)
+altRegAut (aut1, s1)  (aut2, s2) = (AD ([1,2]++[x*5| x<- stateData aut1]++[x*7| x<- stateData aut2])
+                                [2] 
+                                (gluingAlt (aut1, s1) (aut2, s2))
+                                ,1)
+
+gluingAlt :: (AutData l Int, Int)->(AutData l Int, Int) -> [(Int, [(Maybe l, Int)])]
+gluingAlt (aut1,s1) (aut2,s2) = start ++ firstAut ++endFirstAut ++ secondAut ++ endSecondAut where
+ start = [(1, [(Nothing, s1*5)]), (1, [(Nothing, s2*7)])]
+ firstAut = [(x*5, multTuple 5 (transForState aut1 x) ) | x<- stateData aut1, x `notElem` acceptData aut1]
+ secondAut = [(x*7, multTuple 7 (transForState aut2 x) ) | x<- stateData aut2, x `notElem` acceptData aut2]
+ endFirstAut = [(x*5, (multTuple 5 (transForState aut1 x))++[(Nothing,2)] ) | x<- acceptData aut1]
+ endSecondAut = [(x*7, (multTuple 7 (transForState aut2 x))++[(Nothing,2)] ) | x<- acceptData aut2]
+
+starRegAut :: (AutData l Int, Int) -> (AutData l Int,Int)
+starRegAut (aut, s) = (AD (1:[x*11 | x<- stateData aut])
+                    [1]
+                    (gluingStar (aut, s))
+                    ,1)
+
+gluingStar :: (AutData l Int, Int)-> [(Int, [(Maybe l, Int)])]
+gluingStar (aut1, s1) = start ++ middle ++ end where
+ start = [(1, [(Nothing, s1*11)])]
+ middle = [(x, multTuple 11 (transForState aut1 x))| x<-stateData aut1, x `notElem` acceptData aut1]
+ end = [(a, [(Nothing, 1)]++ multTuple 11 (transForState aut1 a)) | a <- acceptData aut1]
 
 multTuple :: Int -> [(a,Int)] -> [(a,Int)]
 multTuple _ [] = []
-multTuple n (a,b):xs = (a,n*b):(multTuple n xs) 
+multTuple n ((a,b):xs) = (a,n*b):(multTuple n xs) 
 
 
--- Take a collection of data and starting state, outputs a regular expression which corresponds to the language.
-autToReg :: Autdata l s -> [s] -> Regex
-autToReg aut [s]= kleeneAlgo newAut 0 (length stateData aut) (length stateData aut) where newAut = cleanAutomata . relableAut aut
+-- Take a collection of data and starting states, outputs a regular expression which corresponds to the language.
+autToReg :: Eq l =>Ord s =>(AutData l s, s)-> Regex l
+autToReg (aut, s)= kleeneAlgo intAut 0 lastState lastState where 
+ intAut = (fst.cleanAutomata.relableAut) (aut,s)
+ lastState = (length (stateData intAut)-1) 
+--autToReg aut [s]= kleeneAlgo newAut 0 (length stateData aut) (length stateData aut) where newAut = cleanAutomata . relableAut aut
 
 --following the Wikipedia page, this function recursively removes elements and uses the removed transition lables to construct the regex. 
-kleeneAlgo:: AutData l Int -> Int -> Int -> Regex l
-kleeneAlgo aut i j (-1) = if i==j then Alt Epsilon altSet [ l | l `elem` second fromJust (lookup i transitionData aut)] else altSet [ l | l `elem` second fromJust (lookup i transitionData aut)]
-kleeneAlgo aut i j k = Alt (kleeneAlgo i j (k-1)) (seqSet [(kleeneAlgo i j (k-1)), Star (kleeneAlgo i j (k-1)), (kleeneAlgo i j (k-1)) ])
+kleeneAlgo:: Eq l => AutData l Int -> Int -> Int -> Int -> Regex l
+kleeneAlgo aut i j (-1) = simplifyRegex (if i==j then Alt Epsilon (altSet [if  isNothing a then Epsilon else L (fromJust a) | a <- successorSet aut i j]) else (altSet [if  isNothing a then Epsilon else L (fromJust a) | a <- successorSet aut i j]) )
+kleeneAlgo aut i j k = (Alt (simplifyRegex(kleeneAlgo aut i j (k-1))) (simplifyRegex(seqSet [simplifyRegex(kleeneAlgo aut i k (k-1)), simplifyRegex (Star (kleeneAlgo aut k k (k-1))), simplifyRegex (kleeneAlgo aut k j (k-1)) ])))
+
+-- takes some automata data and two states, s1, s2. Ouputs all the ways to get s2 from s1
+successorSet :: Eq s => AutData l s -> s -> s -> [Maybe l]
+successorSet aut s1 s2 
+ | isNothing (lookup s1 (transitionData aut) ) = [] -- if there are no successors
+ | otherwise = map fst (filter (\w -> s2 == snd w) (fromJust $ lookup s1 (transitionData aut)) )
 
 
-altSet:: [l]->Regex L
-altSet [] = Epsilon
-altSet (x:xs) = Seq x (seqSet xs)
 
--- states as integer makes everything easier 
-relableAut :: Autdata l s -> Autdata l Int
-relableAut aut = undefined
+altSet:: [Regex l]->Regex l
+altSet [] = Empty
+altSet [x] = x
+altSet (x:xs) = Alt x (altSet xs)
 
-relableHelper :: [s]->[s]->[(s,[(Maybe l,s)])]->[Int]->[Int]->[(Int, [(Maybe l, Either s Int)])]->Int->[s]->[s]->[(s,[(Maybe l,s)])]->[Int]->[Int]->[(Int, [(Maybe l, Either s Int)])]
-relableHelper :: _ [] _ _ _ _ _ = return yadayada
-relableHelper acc (s:ss) trans intAcc intState intTrans n = do 
- let newIntState = n:intState
- let newN = n+1
- let newIntAcc = if s `elem` acc then n:intAcc else intAcc
- let newAcc = if s `elem` acc then filter (/= s) acc else acc
- let newIntTrans = undefined
- let newTrans = filter (\w -> (first w)==s) trans
- relableHelper newAcc ss newTrans newIntAcc newIntState newIntState newN
+seqSet:: [Regex l]->Regex l
+seqSet [] = Empty
+seqSet [x] = x
+seqSet (x:xs) = Seq x (seqSet xs)
+
+-- states as integer makes everything easier. We use a dictionary to relable in one sweep per say
+relableHelp :: Ord s => AutData l s -> s -> Int
+relableHelp aut s = fromJust (Map.lookup s (Map.fromList $ zip (stateData aut) [1 .. (length (stateData aut)+1)]))
+
+relableAut :: Ord s => (AutData l s, s) -> (AutData l Int, Int)
+relableAut (aut, s1) = (AD [relableHelp aut s | s <- stateData aut]
+                           [relableHelp aut s| s<- acceptData aut]
+                           [(relableHelp aut s, [ (a, relableHelp aut b)| (a,b) <- (transForState aut s)] ) | s<- stateData aut]
+                       , relableHelp aut s1)
+
 
 -- take aut data and make a nice start state/end state
-cleanAutomata:: Autdata l Int -> s -> AutData l Int -> s
-cleanAutomata aut s = AD length acceptData aut
-                         0:(stateData aut)
-                         [(w, if w `elem` acceptData aut then (Nothing, length acceptData aut):(fromJust (lookup w transitionData aut)) else fromJust (lookup w transitionData aut) ) | w <- stateData aut]++ [0,[(Nothing, x) | x<-s]]
-                       
-\end{code}
+cleanAutomata:: (AutData l Int, Int) -> (AutData l Int, Int)
+cleanAutomata (aut, s) = (AD (0:lastState:(stateData aut) )
+                          [lastState]
+                          (cleanTransition (aut,s))
+                         , 0) where lastState = 1+(length (stateData aut))
+ 
+cleanTransition:: (AutData l Int, Int) -> [(Int, [(Maybe l, Int)])]
+cleanTransition (aut, s) = start ++ middle ++ end where
+ start = [(0, [(Nothing, s)])]
+ middle = [(x, transForState aut x) | x <- stateData aut, x `notElem` acceptData aut]
+ end = [(x, [(Nothing, (length $ stateData aut)+1)]++(transForState aut x)) | x<- acceptData aut]
+
+
+ -- Examples
+
+exampleAut :: AutData String Int
+exampleAut = AD [1,2,3] [2] [(1, [(Just "a", 1), (Just "b", 2)]), (2, [(Just "b", 2), (Just "a", 3)   ]), (3, [(Just "a", 2), (Just "b", 2)])]
+
+exampleAut2 :: AutData String Int
+exampleAut2 = AD [1,2,3,4] [4] [(1, [(Just "a", 2)]), (2, [(Just "a", 3)]), (3, [(Just "a", 4)])]\end{code}
 
