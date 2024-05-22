@@ -52,6 +52,14 @@ main = hspec $ do
                            acceptDA (fromNA myNDA) 
                                     (fromStartNA myNDA 1) 
                                     input
+    it "NA to reg then to NA should give the same result" $
+      property $ \input -> ndautAccept myNDA 1 input == 
+                           uncurry ndautAccept (updateNA (myNDA,1)) input
+
+updateNA :: (NDetAut Letter Int,Int) -> (NDetAut Letter Int,Int)
+updateNA (nda, s) = (newNDA, s0)
+  where (newdata, s0) = regToAut $ autToReg (decodeNA nda,s)
+        newNDA = fromJust $ encodeNA newdata
 
 myAutData :: AutData Letter Int
 myAutData = AD [1,2,3,4]        -- the states
