@@ -1,54 +1,95 @@
-q#+TITLE: Haskelleene
+#+TITLE: Haskelleene
+#+TODO: T(t) | W(w) D(d)
 
-Final project and report for Functional Programming Course. Implementation of finite automata, regular expressions, and Kleene algebra within Haskell; in particular an algorithm for converting between automata and regular expressions, and vice versa.
+Final project and report for Functional Programming Course. Implementation of deterministic finite automata, non-deterministic finite automata, and regular expressions within Haskell; in particular an algorithm for converting between automata and regular expressions, and vice versa.
 
 * The Plan
 
-For the state implementation, thinking of using a variant of the "turnstile" construction used on the [[https://en.wikibooks.org/wiki/Haskell/Understanding_monads/State][State Monad Haskell wikibooks page]].
+** Core Structures
 
-** Defining things
+These are the core data types that we work with throughout the project. Much of the project is about the well-known equivalence between them, also known as Kleene's Theorem. 
+
+*** AutData
+
+A simple encoding of automaton data, with no restriction on if it is deterministic or not. Essentially for convenience when moving between the different structures.
 
 *** DFAs
+
+Comprised of a set of states, a subset of accepting states, and a function taking a letter and a state to a new state.
+
 *** NFAs
-*** regexes
 
-** Semantics
-*** DFA semantics
+Similar to a DFA, except it can take a letter to a set of possible output states, or also take nothing to transition from one state to another.
 
-*** NFA semantics
+*** Regular Expressions
 
-*** Regex semantics
+Built using the syntax of Kleene Algebra, used to specify regular expressions. Implemented similarly to propositional logic, but with an even nicer show function.
 
-*** QuickCheck Semantics
+** Translating Between Structures
 
-** Translating (Aut <-> Regex)
-*** Power-set Construction
-*** QuickCheck Determinisation Equivalence
+As stated above, a large part of the project is about being able to encode a regular language as any of a DFA, NFA, or regular expression, equivalently. These functions allow for translating from one of the data types to another in a way that preserves the language specified.
 
-*** "Lift" from DFAs to NFAs
-*** Floyd-Warshall Algorithm (Aut -> Regex)
+*** Creating an Automaton from Data (detCheck, encodeDA,encodeNA)
 
-A reachability algorithm ([[https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm][wikipedia]]) to determine the shortest paths between vertices in a graph. The plan is to use it to create a regular expression representing a given automaton.
+~detCheck~ is a function checking if a certain set of automaton data can actually specify a deterministic automaton (no empty transitions, transition function is deterministic at every state). If an data set can pass ~detCheck~, then we can encode it as a DFA. For this purpose we have the function ~encodeDA~, which produces an automaton if the data passes ~detCheck~, and ~Nothing~ otherwise.
 
-Closely related to Kleene's algorithm ([[https://en.wikipedia.org/wiki/Kleene%27s_algorithm][wikipedia]]) for creating a regular expression from an automaton.
+Because all data can be turned into a valid NFA, we have no need for such a check, and so we have the function ~encodeNA~ for turning
 
-*** Going the other way (Regex -> Aut)
+Note that we don't check at any point that the accepting states are a subset of the all states; in such a scenario all "accepting states" not specified as valid states are simply ignored.
 
-*** QuickCheck mutual inverses
+*** Power-set Determinisation (fromNA)
 
-by generating both automata and regexes, and running both constructions in sequence to see if we get an equivalent thing.
+We use the well-known power-set construction to turn a NFA into a DFA.
 
-*** QuickCheck language equivalence
+*** Forgetting Determinism (fromDA)
 
-For a randomly generated automata and the regex it gets, as well as for a regex and the automata it gets.
+Because all DFAs can also be considered NFAs (by just ignoring the determinism requirement), we allow DFAs to be "lifted" directly to NFAs.
 
-** Kleene algebra
+*** Extracting Data from Automata (decode)
 
-a proof system for reasoning about equality of regular expressions.
+Our functions for translating between automata and data actually operate on automaton data, as it's much easier to handle tuples/lists than functions in such a setting. Therefore, we have the function ~decode~ to undo the work of encoding an automaton, by turning it into a data set.
 
-*** Define proof system
+This function operates on NFAs, so to decode a DFA, one can just compose this function with ~fromDA~ to turn it into an NFA.
 
-see Malvin's notes on Tableaux from May 06 lecture.
+*** Kleene's Algorithm (autToReg)
+
+Kleene's Algorithm, closely related to the Floyd-Warshall algorithm for shorted paths in a graph, generates a regular expression given some input automaton.
+
+*** Generating Automata (regToAut)
+
+Generates an automaton to represent a regular expression.
+
+** QuickCheck
+
+*** T Encoding
+
+Check if we encode deterministic data as both a DFA and NFA, it should accept the same words.
+
+*** T Determinisation
+
+If we determinise an NFA, its determinised version should accept the same words.
+
+*** T Language Equivalence
+
+An automaton and the regex it generates should accept the same words. Similarly, some regex and the automaton it generates should accept the same words.
+
+*** T Mutual Inverses 
+
+An automaton, and the output of converting it into a regex and back to an automaton should accept the same words. Similarly with a regex and converting it into an automaton, and back into a regex.
+
+** T Possible Next Things
+
+*** MSO
+Monadic second order logic with successor is equivalent to regex, DFAs, and NFAs,.
+There is an effective transformation between MSO formulas and automata, which we could implement.
+
+*** Kleene Algebra with Hypotheses
+
+Could implement hypothesis closure on automata and regular expression (in a subset of simple cases)
+
+** T Report
+
+A lot of the stuff in this readme can most likely be adapted into the report.
 
 * Notes from template README
 
