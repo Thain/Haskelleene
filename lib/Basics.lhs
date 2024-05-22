@@ -229,13 +229,64 @@ simplifyRegex rx = case rx of
                     (Star Empty) -> Empty
                     (Star Epsilon) -> Epsilon
                     (Star (Star r)) -> simplifyRegex $ Star r
-                    (Star (Alt Empty r)) -> simplifyRegex r
-                    (Star (Alt r Empty)) -> simplifyRegex r
-                    (Star (Seq Epsilon r)) -> simplifyRegex r
-                    (Star (Seq r Epsilon)) -> simplifyRegex r
+                    (Star (Alt Empty r)) -> simplifyRegex $ Star r
+                    (Star (Alt r Empty)) -> simplifyRegex $ Star r
+                    (Star (Seq Epsilon r)) -> simplifyRegex $ Star r
+                    (Star (Seq r Epsilon)) -> simplifyRegex $ Star r
                     x -> x
 
+regexAccept :: Eq l => Regex l -> [l] -> Bool
+-- the empty language accepts no words
+regexAccept Empty _    = False
+-- if down to the empty string, only accept the empty word
+regexAccept Epsilon [] = True  
+regexAccept Epsilon _  = False
+-- if down to a single letter, only accept that letter (and if longer, reject too)
+regexAccept (L _) []   = False
+regexAccept (L l) [c] | l == c = True
+                      | otherwise = False
+regexAccept (L _) (_:_) = False
+-- optimisations for simple sequences (one part is just a letter)
+regexAccept (Seq (L _) _) [] = False
+regexAccept (Seq _ (L _)) [] = False
+regexAccept (Seq (L l) r) (c:cs) | l == c = regexAccept r cs
+                                 | otherwise = False
+regexAccept (Seq r (L l)) cs | last cs == l = regexAccept r (init cs)
+                             | otherwise = False
+-- general Seq case is less efficient
+regexAccept (Seq r r') cs = any ((regexAccept r') . snd) (initCheck r cs) 
+-- general Alt case pretty easy
+regexAccept (Alt r r') cs = regexAccept r cs || regexAccept r' cs
+-- if word is empty, star is true
+regexAccept (Star _) [] = True
+-- general star case
+regexAccept (Star r) cs = any ((regexAccept (Star r)) . snd) (initCheck r cs)
+
+-- get all initial sequences of the word that match the regex
+initCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
+initCheck r w = filter ((regexAccept r) . fst) (splits w)
+
+-- examples
+abc = seqList' [A,B,C]
+abca = seqList' [A,B,C,A]
+aOrbc = Seq abc $ Star (Alt (L A) (Seq (L B) (L C)))
+
+-- utility functions
+
+-- splits a list into all possible (order preserving) divisions of it
+-- e.g. [1,2,3] becomes [([],[1,2,3]),([1],[2,3]),([1,2],[3]),([1,2,3],[])]
+splits :: [a] -> [([a],[a])]
+splits [] = [([],[])]
+splits (x:xs) = map (appendFst x) (splits xs) ++ [([],(x:xs))]
+
+-- append to the front of the first of a pair of lists
+appendFst :: a -> ([a],[a]) -> ([a],[a])
+appendFst x (y,z) = (x:y,z)
+        
+-- ---------------
 -- REGEX to DetAut
+-- ---------------
+
 -- Since regex to automata inducts on the transition functions, we need a way to glue or reshape our automata nicely
 -- As we add more states we need to relable them. The base states are 1 and 2, multiplying by 3 is sequence, multiplying by 5 and 7 is Alt, multiplying by 11 is Star
 
