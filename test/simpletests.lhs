@@ -11,6 +11,10 @@ module Main where
 import Test.Hspec
 import Test.QuickCheck
 import Basics
+import Automata
+import Regex
+import Kleene
+import Examples
 
 \end{code}
 
@@ -39,7 +43,7 @@ Here is the example deterministic automaton that is below:
 \begin{code}
 main :: IO ()
 main = hspec $ do
-  describe "Basics" $ do
+  describe "Examples" $ do
     it "DA test run result should be (4,True)" $
       myTestRun `shouldBe` (4,True)
     it "NA and transfer to DA should give the same result" $
