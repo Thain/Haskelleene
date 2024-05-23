@@ -134,22 +134,22 @@ decode nda = AD { stateData = sts
         graph f as = zip as $ f <$> as
 -- graph :: (a -> b) -> [a] -> [(a,b)]
 
-runNA :: NDetAut l s  -> s -> [l] -> [([l], s)]
+runNA :: (Alphabet l, Ord s) => NDetAut l s  -> s -> [l] -> [([l], s)]
 runNA na st input = 
   case input of
-    [] -> ([],st) : concatMap (\s -> runNA na s input) nsucc
-    (w:ws) -> case wsucc of
-                [] -> (input,st) : concatMap (\s -> runNA na s input) nsucc
-                ls -> concatMap (\s -> runNA na s ws) ls ++ 
-                      concatMap (\s -> runNA na s input) nsucc
+    [] -> ([],) <$> epReachable (ndelta na) st
+    (w:ws) -> concatMap (\s -> runNA na s input) nsucc ++
+              case wsucc of
+                [] -> [(input,st)]
+                ls -> concatMap (\s -> runNA na s ws) ls
       where wsucc = ndelta na (Just w) st
     where   nsucc = ndelta na Nothing  st
 
-ndautAccept :: (Alphabet l, Eq s) => NDetAut l s -> s -> [l] -> Bool
+ndautAccept :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> Bool
 ndautAccept na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $
                       runNA na s0 w
 
-ndfinalStates :: NDetAut l s -> s -> [l] -> [s]
+ndfinalStates :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> [s]
 ndfinalStates na s0 w = snd <$> runNA na s0 w
 
 -- trivial forgetful DA -> NA
@@ -180,13 +180,84 @@ fromTransNA :: (Alphabet l, Ord s) => (Maybe l -> s -> [s]) ->
                                       l -> Set.Set s -> Set.Set s
 fromTransNA ntrans sym set = result
   where starts = listUnions (epReachable ntrans) set
-        result = listUnions (ntrans $ Just sym) starts
+        step = listUnions (ntrans $ Just sym) starts
+        result = listUnions (epReachable ntrans) step
         listUnions f input = Set.unions $ Set.map Set.fromList $ Set.map f input
 -- listUnions :: (Ord s) => (s -> [s]) -> Set.Set s -> Set.Set s
 
 fromStartNA :: (Alphabet l, Ord s) => NDetAut l s -> s -> Set.Set s
-fromStartNA nda st = Set.fromList $ st : epReachable ntrans st
+fromStartNA nda st = Set.fromList $ epReachable ntrans st
   where ntrans = ndelta nda
+
+-- test cases
+
+updateNA :: (NDetAut Letter Int,Int) -> (NDetAut Letter Int,Int)
+updateNA (nda, s) = (newNDA, s0)
+  where (newdata, s0) = regToAut $ autToReg (decode nda,s)
+        newNDA = fromJust $ encodeNA newdata
+
+myAutData :: AutData Letter Int
+myAutData = AD [1,2,3,4]        -- the states
+               [4]              -- accepting states
+               [(1,[(Just A,1)  -- the transitions
+                   ,(Just B,2)
+                   ,(Just C,3)])
+               ,(2,[(Just A,4)
+                   ,(Just B,2)
+                   ,(Just C,1)])
+               ,(3,[(Just A,1)
+                   ,(Just B,4)
+                   ,(Just C,3)])
+               ,(4,[(Just A,4)
+                   ,(Just B,4)
+                   ,(Just C,4)])]
+
+myDACheck :: Bool
+myDACheck = detCheck myAutData
+
+myDA :: DetAut Letter Int
+myDA = fromJust $ encodeDA myAutData
+
+-- an accepting sequence of inputs
+myInputs :: [Letter]
+myInputs = [A,A,A,A,B,C,B,B,B,A]
+
+myTestRun :: (Int, Bool)
+myTestRun = (finalst, result)
+  where finalst = run myDA 1 myInputs
+        result = acceptDA myDA 1 myInputs
+
+myNAutData :: AutData Letter Int
+myNAutData = AD [1,2,3,4]         -- the states
+                [4]               -- accepting states
+                [(1,[(Nothing,2)
+                    ,(Just C,3)])
+                ,(2,[(Nothing,4)
+                    ,(Just B,2)
+                    ,(Just C,1)])
+                ,(3,[(Just A,1)
+                    ,(Just C,3)])
+                ,(4,[(Just B,4)
+                    ,(Just C,4)])]
+
+myNDA :: NDetAut Letter Int
+myNDA = fromJust $ encodeNA myNAutData
+
+myNInputsFalse :: [Letter]
+myNInputsFalse = [B,B,A]
+
+myNInputsTrue :: [Letter]
+myNInputsTrue = []
+
+myNTestRunFalse :: ([([Letter],Int)],Bool)
+myNTestRunFalse = (filist,result)
+  where filist = runNA myNDA 1 myNInputsFalse
+        result = ndautAccept myNDA 1 myNInputsFalse
+
+myNTestRunTrue :: ([([Letter],Int)],Bool)
+myNTestRunTrue = (filist,result)
+  where filist = runNA myNDA 1 myNInputsTrue
+        result = ndautAccept myNDA 1 myNInputsTrue
 
 -- -----------------
 -- REGEX definitions 
