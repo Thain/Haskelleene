@@ -1,3 +1,4 @@
+
 \section{The most basic library}\label{sec:Basics}
 
 This section describes a module which we will import later on.
@@ -190,12 +191,6 @@ fromStartNA nda st = Set.fromList $ epReachable ntrans st
   where ntrans = ndelta nda
 
 -- test cases
-
-updateNA :: (NDetAut Letter Int,Int) -> (NDetAut Letter Int,Int)
-updateNA (nda, s) = (newNDA, s0)
-  where (newdata, s0) = regToAut $ autToReg (decode nda,s)
-        newNDA = fromJust $ encodeNA newdata
-
 myAutData :: AutData Letter Int
 myAutData = AD [1,2,3,4]        -- the states
                [4]              -- accepting states
@@ -382,6 +377,10 @@ regToAut (Seq a b) = seqRegAut  (regToAut a) (regToAut b)
 regToAut (Alt a b) = altRegAut  (regToAut a) (regToAut b)
 regToAut (Star a) = starRegAut $ regToAut a
 
+fromReg :: (Alphabet l) => Regex l -> (NDetAut l Int, Int)
+fromReg reg = (fromJust (encodeNA ndata),st)
+  where (ndata,st) = regToAut reg
+
 seqRegAut :: (AutData l Int, Int) -> 
              (AutData l Int, Int) -> 
              (AutData l Int, Int)
@@ -497,4 +496,17 @@ exampleAut = AD [1,2,3] [2] [(1, [(Just "a", 1), (Just "b", 2)]), (2, [(Just "b"
 
 exampleAut2 :: AutData String Int
 exampleAut2 = AD [1,2,3,4] [4] [(1, [(Just "a", 2)]), (2, [(Just "a", 3)]), (3, [(Just "a", 4)])]
+
+exampleRegex :: Regex Letter
+exampleRegex = Star (Alt (L A) (L B))
+
+annoyingRegex :: Regex Letter
+annoyingRegex = Alt Empty (Seq Epsilon (L A))
+
+-- examples
+abc,abca,aOrbc :: Regex Letter
+abc = seqList' [A,B,C]
+abca = seqList' [A,B,C,A]
+aOrbc = Seq abc $ Star (Alt (L A) (Seq (L B) (L C)))
+
 \end{code}

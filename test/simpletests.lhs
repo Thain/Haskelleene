@@ -1,3 +1,4 @@
+
 \section{Simple Tests}\label{sec:simpletests}
 
 We now use the library QuickCheck to randomly generate input for our functions
@@ -46,20 +47,9 @@ main = hspec $ do
                            acceptDA (fromNA myNDA) 
                                     (fromStartNA myNDA 1) 
                                     input
-    it "NA to reg then to NA should give the same result" $
-      ndautAccept myNDA 1 [A,B,C] == uncurry ndautAccept (updateNA (myNDA,1)) [A,B,C]  `shouldBe` True
-
-exampleRegex :: Regex Letter
-exampleRegex = Star (Alt (L A) (L B))
-
-annoyingRegex :: Regex Letter
-annoyingRegex = Alt Empty (Seq Epsilon (L A))
-
--- examples
-abc,abca,aOrbc :: Regex Letter
-abc = seqList' [A,B,C]
-abca = seqList' [A,B,C,A]
-aOrbc = Seq abc $ Star (Alt (L A) (Seq (L B) (L C)))
+    it "reg to NA should give the same result" $
+      property $ \input -> regexAccept exampleRegex input ==
+                           uncurry ndautAccept (fromReg exampleRegex) input
 
 \end{code}
 
