@@ -158,7 +158,7 @@ fromDA da = NA { nstates = states da
                , naccept = accept da
                , ndelta = newDelta } where
   newDelta Nothing _ = []
-  newDelta (Just l) st = [(delta da) l st]
+  newDelta (Just l) st = [delta da l st]
 
 -- The Power-set Construction: NA -> DA 
 fromNA :: (Alphabet l, Ord s) => NDetAut l s -> DetAut l (Set.Set s)
@@ -185,7 +185,7 @@ fromTransNA ntrans sym set = result
 -- listUnions :: (Ord s) => (s -> [s]) -> Set.Set s -> Set.Set s
 
 fromStartNA :: (Alphabet l, Ord s) => NDetAut l s -> s -> Set.Set s
-fromStartNA nda st = Set.fromList $ epReachable ntrans st
+fromStartNA nda st = Set.fromList $ st : epReachable ntrans st
   where ntrans = ndelta nda
 
 -- -----------------
@@ -221,8 +221,8 @@ altList (l:ls) = Alt l $ altList ls
 altList [] = Empty
 
 seqList', altList' :: [l] -> Regex l
-seqList' = seqList . (map L)
-altList' = altList . (map L)
+seqList' = seqList . map L
+altList' = altList . map L
 
 -- very simple regex simplifications (guaranteed to terminate or your money back)
 simplifyRegex :: Eq l => Regex l -> Regex l
@@ -262,17 +262,17 @@ regexAccept (Seq (L l) r) (c:cs) | l == c = regexAccept r cs
 regexAccept (Seq r (L l)) cs | last cs == l = regexAccept r (init cs)
                              | otherwise = False
 -- general Seq case is less efficient
-regexAccept (Seq r r') cs = any ((regexAccept r') . snd) (initCheck r cs) 
+regexAccept (Seq r r') cs = any (regexAccept r' . snd) (initCheck r cs) 
 -- general Alt case pretty easy
 regexAccept (Alt r r') cs = regexAccept r cs || regexAccept r' cs
 -- if word is empty, star is true
 regexAccept (Star _) [] = True
 -- general star case
-regexAccept (Star r) cs = any ((regexAccept (Star r)) . snd) (initCheck r cs)
+regexAccept (Star r) cs = any (regexAccept (Star r) . snd) (initCheck r cs)
 
 -- get all initial sequences of the word that match the regex
 initCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
-initCheck r w = filter ((regexAccept r) . fst) (splits w)
+initCheck r w = filter (regexAccept r . fst) (splits w)
 
 -- utility functions
 
@@ -280,7 +280,7 @@ initCheck r w = filter ((regexAccept r) . fst) (splits w)
 -- e.g. [1,2,3] becomes [([],[1,2,3]),([1],[2,3]),([1,2],[3]),([1,2,3],[])]
 splits :: [a] -> [([a],[a])]
 splits [] = [([],[])]
-splits (x:xs) = map (appendFst x) (splits xs) ++ [([],(x:xs))]
+splits (x:xs) = map (appendFst x) (splits xs) ++ [([],x:xs)]
 
 -- append to the front of the first of a pair of lists
 appendFst :: a -> ([a],[a]) -> ([a],[a])

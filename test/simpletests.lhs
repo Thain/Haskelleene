@@ -136,8 +136,6 @@ abc = seqList' [A,B,C]
 abca = seqList' [A,B,C,A]
 aOrbc = Seq abc $ Star (Alt (L A) (Seq (L B) (L C)))
 
-
-
 \end{code}
 
 To run the tests, use \verb|stack test|.
