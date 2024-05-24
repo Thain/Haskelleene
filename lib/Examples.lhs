@@ -57,13 +57,22 @@ myNAutData = AD [1,2,3,4]         -- the states
                 ,(2,[(Nothing,4)
                     ,(Just B,2)
                     ,(Just C,1)])
+                ,(1,[(Just A,2), -- want to merge these with above
+                     (Just A,3)])
                 ,(3,[(Just A,1)
                     ,(Just C,3)])
+                ,(1,[(Nothing,1)  -- want to be ignoring this
+                    ,(Nothing,3)  -- want to merge these with above
+                    ,(Just A,4)])
                 ,(4,[(Just B,4)
                     ,(Just C,4)])]
 
 myNDA :: NDetAut Letter Int
-myNDA = fromJust $ encodeNA myNAutData
+myNDA = encodeNA myNAutData
+
+-- what epsilon transitions does 1 have? should just be to state 2
+nothingFrom1 :: [Int]
+nothingFrom1 = (ndelta myNDA) Nothing 1
 
 myNInputsFalse :: [Letter]
 myNInputsFalse = [B,B,A]

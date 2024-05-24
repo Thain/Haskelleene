@@ -10,6 +10,7 @@ module Automata where
 
 import Basics -- contains all of our utility functions
 import Data.Maybe
+import Data.List
 import qualified Data.Set as Set
 
 -- ----------------------
@@ -59,26 +60,38 @@ data NDetAut l s = NA { nstates :: [s]
                       , naccept :: [s]
                       , ndelta :: Maybe l -> s -> [s] }
 
--- check the data can define an nondeterministic automaton:
-ndetCheck :: (Alphabet l, Eq s) => AutData l s -> Bool
-ndetCheck ad = allUnq sts &&
-               -- all states are in transitionData exactly once
-               all (\(st,trs) -> (Nothing,st) `notElem` trs) trdata
-               -- no epsilon self-loop
-  where trdata = transitionData ad 
-        sts = fst <$> trdata
+-- make data into an NA (if data formatted properly, go ahead; otherwise, format it then encode)
+encodeNA :: (Alphabet l, Eq s) => AutData l s -> NDetAut l s
+encodeNA d = NA { nstates = stateData d
+                , naccept = acceptData d
+                , ndelta = newDelta } where
+  newDelta sym st = case lookup st tData of
+                      Nothing -> []
+                      Just ls -> nub [ st' | (sym', st') <- ls, sym' == sym, sym' /= Nothing || st' /= st ]
+  tData = case (trsMerged rawTData) of
+                                True -> rawTData
+                                False -> mergeTrs rawTData
+  trsMerged = allUnq . (map fst)
+  rawTData = transitionData d
 
--- make data into an NA (no need for safety check)
-encodeNA :: (Alphabet l, Eq s) => AutData l s -> Maybe (NDetAut l s)
-encodeNA d | not $ ndetCheck d = Nothing
-           | otherwise         = Just $
-  NA { nstates = stateData d
-     , naccept = acceptData d
-     , ndelta = help }
-  where help sym st = case lookup st (transitionData d) of
-                        Nothing -> []
-                        Just ls -> [ st' | (sym', st') <- ls, sym' == sym ]
+-- slow, so we don't always want to be calling this
+mergeTrs :: Eq s => TDict l s -> TDict l s
+mergeTrs [] = []
+mergeTrs (tr:trs) = mTr:(mergeTrs remTrs) where
+  mTr = (fst tr, fst prop ++ (snd tr))
+  remTrs = snd prop
+  prop = propTrs (fst tr) trs
 
+-- for a given state, propagate all of its output together, and return
+-- all of them, as well as the transition data with those removed
+-- type TDict l s = [(s, [(Maybe l, s)])]
+propTrs :: Eq s => s -> TDict l s -> ([(Maybe l,s)], TDict l s)
+propTrs _ [] = ([],[])
+propTrs st (tr:trs) = appendTuple resultTuple (propTrs st trs) where
+  resultTuple = case st == (fst tr) of
+                 True -> (snd tr,[])
+                 False -> ([],[tr])
+                 
 -- put an NA back into autdata, e.g. to turn it into regex
 decode :: (Alphabet l, Eq s) => NDetAut l s -> AutData l s
 decode nda = AD { stateData = sts
@@ -88,10 +101,9 @@ decode nda = AD { stateData = sts
   where sts = nstates nda
         ntrans = ndelta nda
         symlist = Nothing : (Just <$> completeList)
-        trandata = graph help sts -- where ...
+        trandata = graph help sts 
         help st = concatMap (\sym -> (sym,) <$> ntrans sym st) symlist
         graph f as = zip as $ f <$> as
--- graph :: (a -> b) -> [a] -> [(a,b)]
 
 runNA :: (Alphabet l, Ord s) => NDetAut l s  -> s -> [l] -> [([l], s)]
 runNA na st input = 
@@ -115,7 +127,7 @@ ndfinalStates na s0 w = snd <$> runNA na s0 w
 -- CONVERTING BETWEEN AUTOMATA
 -- ---------------------------
 
--- trivial forgetful DA -> NA
+-- The trivial forgetful functor: DA -> NA
 fromDA :: (Alphabet l) => DetAut l s -> NDetAut l s
 fromDA da = NA { nstates = states da
                , naccept = accept da
@@ -147,7 +159,6 @@ fromTransNA ntrans sym set = result
         step = listUnions (ntrans $ Just sym) starts
         result = listUnions (epReachable ntrans) step
         listUnions f input = Set.unions $ Set.map Set.fromList $ Set.map f input
--- listUnions :: (Ord s) => (s -> [s]) -> Set.Set s -> Set.Set s
 
 fromStartNA :: (Alphabet l, Ord s) => NDetAut l s -> s -> Set.Set s
 fromStartNA nda st = Set.fromList $ epReachable ntrans st

@@ -39,7 +39,7 @@ regToAut (Alt a b) = altRegAut  (regToAut a) (regToAut b)
 regToAut (Star a) = starRegAut $ regToAut a
 
 fromReg :: (Alphabet l) => Regex l -> (NDetAut l Int, Int)
-fromReg reg = (fromJust (encodeNA ndata),st)
+fromReg reg = (encodeNA ndata,st)
   where (ndata,st) = regToAut reg
 
 seqRegAut :: (AutData l Int, Int) -> 

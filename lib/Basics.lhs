@@ -35,12 +35,14 @@ instance Alphabet Letter where
 instance Arbitrary Letter where
   arbitrary = elements completeList
 
+type TDict l s = [(s, [(Maybe l, s)])]
+
 -- l is the type of our alphabet (most likely a finite set),
 -- s is the type of our states
 -- Maybe l because we allow empty transitions
 data AutData l s = AD { stateData :: [s] 
                       , acceptData :: [s] 
-                      , transitionData :: [(s, [(Maybe l, s)])] }
+                      , transitionData :: TDict l s }
                       deriving Show
 
 -- given data in the format of transitionData, an input state, and input
@@ -50,10 +52,10 @@ getTrs allTrs s0 ltr = filter (\x -> fst x == ltr) $ filter (\x -> fst x == s0) 
 
 -- utility for checking if a list has duplicates
 allUnq:: Eq a => [a] -> Bool
-allUnq = f []
+allUnq = unqHelp []
     where
-        f seen (x:xs) = x `notElem` seen && f (x:seen) xs
-        f _ [] = True
+        unqHelp _ [] = True
+        unqHelp seen (x:xs) = elem x seen && unqHelp (x:seen) xs
 
 
 -- splits a list into all possible (order preserving) divisions of it
@@ -63,9 +65,10 @@ splits [] = [([],[])]
 splits (x:xs) = map (appendFst x) (splits xs) ++ [([],x:xs)]
 
 -- append to the front of the first of a pair of lists
-appendFst :: a -> ([a],[a]) -> ([a],[a])
+appendFst :: a -> ([a],[b]) -> ([a],[b])
 appendFst x (y,z) = (x:y,z)
-        
 
+appendTuple :: ([a],[b]) -> ([a],[b]) -> ([a],[b])
+appendTuple (l,l') (m,m') = (l++m,l'++m')
 
 \end{code}
