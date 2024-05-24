@@ -98,15 +98,15 @@ addTuple n ((a,b):xs) = (a,n+b) : multTuple n xs
 -- -----------------------------
 
 -- Take a collection of data and starting states, outputs a regular expression which corresponds to the language. This version creates a nice first and last state
-autToReg :: Eq l => Ord s => (AutData l s, s)-> Regex l
-autToReg (aut, s)= kleeneAlgo intAut 0 lastState lastState where 
+autToRegSlow :: Eq l => Ord s => (AutData l s, s)-> Regex l
+autToRegSlow (aut, s)= kleeneAlgo intAut 0 lastState lastState where 
  intAut = (fst.cleanAutomata.relabelAut) (aut,s)
  lastState = length (stateData intAut) - 1 
 --autToReg aut [s]= kleeneAlgo newAut 0 (length stateData aut) (length stateData aut) where newAut = cleanAutomata . relabelAut aut
 
 --This version does not make a nice first and last state (and thus can't be adapted to multiple start states), but cuts down on the epislons
-unCleanAutToReg :: Eq l => Ord s => (AutData l s, s)-> Regex l
-unCleanAutToReg (aut, s)= altList [kleeneAlgo intAut firstState a lastState | a <- acceptData intAut] where 
+autToReg :: Eq l => Ord s => (AutData l s, s)-> Regex l
+autToReg (aut, s)= altList [kleeneAlgo intAut firstState a lastState | a <- acceptData intAut] where 
  intAut = (fst.relabelAut) (aut,s)
  firstState = relabelHelp aut s
  lastState = length (stateData intAut) - 1
@@ -114,12 +114,12 @@ unCleanAutToReg (aut, s)= altList [kleeneAlgo intAut firstState a lastState | a 
 --following the Wikipedia page, this function recursively removes elements and uses the removed transition lables to construct the regex. 
 kleeneAlgo:: Eq l => AutData l Int -> Int -> Int -> Int -> Regex l
 kleeneAlgo aut i j (-1) = (if i==j 
-                                         then Alt Epsilon (altList [ maybe Epsilon L a | a <- successorSet aut i j]) 
-                                         else altList [ maybe Epsilon L a | a <- successorSet aut i j])
-kleeneAlgo aut i j k = Alt ((kleeneAlgo aut i j (k-1))) 
-                           ((seqList [ (kleeneAlgo aut i k (k-1))
-                                                  , (Star (kleeneAlgo aut k k (k-1)))
-                                                  , (kleeneAlgo aut k j (k-1)) ]))
+                                         then simplifyRegex (Alt Epsilon (altList [ maybe Epsilon L a | a <- successorSet aut i j]) )
+                                         else simplifyRegex (altList [ maybe Epsilon L a | a <- successorSet aut i j]))
+kleeneAlgo aut i j k = simplifyRegex( Alt ((simplifyRegex $ kleeneAlgo aut i j (k-1))) 
+                           (((simplifyRegex.seqList) [ (simplifyRegex $ kleeneAlgo aut i k (k-1))
+                                                  , (Star (simplifyRegex $ kleeneAlgo aut k k (k-1)))
+                                                  , (simplifyRegex $ kleeneAlgo aut k j (k-1)) ])) )
 
 -- takes some automata data and two states, s1, s2. Ouputs all the ways to get s2 from s1
 successorSet :: Eq s => AutData l s -> s -> s -> [Maybe l]
