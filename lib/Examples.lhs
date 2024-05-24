@@ -70,7 +70,7 @@ myNAutData = AD [1,2,3,4]         -- the states
 myNDA :: NDetAut Letter Int
 myNDA = encodeNA myNAutData
 
--- what epsilon transitions does 1 have? should just be to state 2
+-- what epsilon transitions does 1 have? should just be [2,3]
 nothingFrom1 :: [Int]
 nothingFrom1 = (ndelta myNDA) Nothing 1
 

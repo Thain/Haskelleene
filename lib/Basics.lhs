@@ -55,7 +55,7 @@ allUnq:: Eq a => [a] -> Bool
 allUnq = unqHelp []
     where
         unqHelp _ [] = True
-        unqHelp seen (x:xs) = elem x seen && unqHelp (x:seen) xs
+        unqHelp seen (x:xs) = notElem x seen && unqHelp (x:seen) xs
 
 
 -- splits a list into all possible (order preserving) divisions of it
