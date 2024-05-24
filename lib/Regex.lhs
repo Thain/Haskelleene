@@ -49,6 +49,7 @@ altList' = altList . map L
 -- very simple regex simplifications (guaranteed to terminate or your money back)
 simplifyRegex :: Eq l => Regex l -> Regex l
 simplifyRegex rx = case rx of
+                    Alt r4 (Seq r1 (Seq (Star r2) r3)) | r1 == r2 && r3==r4 -> Seq (Star (simplifyRegex r1)) (simplifyRegex r4)
                     (Alt Empty r) -> simplifyRegex r
                     (Alt r Empty) -> simplifyRegex r
                     (Alt r r') | r == r' -> simplifyRegex r
@@ -59,10 +60,9 @@ simplifyRegex rx = case rx of
                     (Star Empty) -> Empty
                     (Star Epsilon) -> Epsilon
                     (Star (Star r)) -> simplifyRegex $ Star r
-                    (Star (Alt Empty r)) -> simplifyRegex $ Star r
-                    (Star (Alt r Empty)) -> simplifyRegex $ Star r
-                    (Star (Seq Epsilon r)) -> simplifyRegex $ Star r
-                    (Star (Seq r Epsilon)) -> simplifyRegex $ Star r
+                    Alt r r' -> Alt (simplifyRegex r) (simplifyRegex r')
+                    Seq r r' -> Seq (simplifyRegex r) (simplifyRegex r')
+                    Star r -> Star (simplifyRegex r)
                     x -> x
 
 regexAccept :: Eq l => Regex l -> [l] -> Bool

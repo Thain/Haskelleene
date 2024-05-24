@@ -83,13 +83,16 @@ starRegAut (aut, s) = (AD (1:[x*11 | x<- stateData aut])
 gluingStar :: (AutData l Int, Int)-> [(Int, [(Maybe l, Int)])]
 gluingStar (aut1, s1) = start ++ middle ++ end where
   start = [(1, [(Nothing, s1*11)])]
-  middle = [(x, multTuple 11 (transForState aut1 x))| x<-stateData aut1, x `notElem` acceptData aut1]
-  end = [(a, (Nothing, 1) : multTuple 11 (transForState aut1 a)) | a <- acceptData aut1]
+  middle = [(x*11, multTuple 11 (transForState aut1 x))| x<-stateData aut1, x `notElem` acceptData aut1]
+  end = [(a*11, (Nothing, 1) : multTuple 11 (transForState aut1 a)) | a <- acceptData aut1]
 
 multTuple :: Int -> [(a,Int)] -> [(a,Int)]
 multTuple _ [] = []
 multTuple n ((a,b):xs) = (a,n*b) : multTuple n xs
 
+addTuple :: Int -> [(a,Int)] -> [(a,Int)]
+addTuple _ [] = []
+addTuple n ((a,b):xs) = (a,n+b) : multTuple n xs
 -- -----------------------------
 -- Automaton to Regex Conversion
 -- -----------------------------
@@ -103,20 +106,20 @@ autToReg (aut, s)= kleeneAlgo intAut 0 lastState lastState where
 
 --This version does not make a nice first and last state (and thus can't be adapted to multiple start states), but cuts down on the epislons
 unCleanAutToReg :: Eq l => Ord s => (AutData l s, s)-> Regex l
-unCleanAutToReg (aut, s)= altList [kleeneAlgo intAut firstState s max | s <- stateData intAut] where 
+unCleanAutToReg (aut, s)= altList [kleeneAlgo intAut firstState a lastState | a <- acceptData intAut] where 
  intAut = (fst.relabelAut) (aut,s)
  firstState = relabelHelp aut s
- max = (length $ stateData aut)-1
+ lastState = length (stateData intAut) - 1
 
 --following the Wikipedia page, this function recursively removes elements and uses the removed transition lables to construct the regex. 
 kleeneAlgo:: Eq l => AutData l Int -> Int -> Int -> Int -> Regex l
-kleeneAlgo aut i j (-1) = simplifyRegex (if i==j 
+kleeneAlgo aut i j (-1) = (if i==j 
                                          then Alt Epsilon (altList [ maybe Epsilon L a | a <- successorSet aut i j]) 
                                          else altList [ maybe Epsilon L a | a <- successorSet aut i j])
-kleeneAlgo aut i j k = Alt (simplifyRegex(kleeneAlgo aut i j (k-1))) 
-                           (simplifyRegex (seqList [ simplifyRegex(kleeneAlgo aut i k (k-1))
-                                                  , simplifyRegex (Star (kleeneAlgo aut k k (k-1)))
-                                                  , simplifyRegex (kleeneAlgo aut k j (k-1)) ]))
+kleeneAlgo aut i j k = Alt ((kleeneAlgo aut i j (k-1))) 
+                           ((seqList [ (kleeneAlgo aut i k (k-1))
+                                                  , (Star (kleeneAlgo aut k k (k-1)))
+                                                  , (kleeneAlgo aut k j (k-1)) ]))
 
 -- takes some automata data and two states, s1, s2. Ouputs all the ways to get s2 from s1
 successorSet :: Eq s => AutData l s -> s -> s -> [Maybe l]
@@ -126,7 +129,7 @@ successorSet aut s1 s2
 
 -- states as integer makes everything easier. We use a dictionary to relabel in one sweep per say
 relabelHelp :: Ord s => AutData l s -> s -> Int
-relabelHelp aut s = fromJust (Map.lookup s (Map.fromList $ zip (stateData aut) [1 .. (length (stateData aut)+1)]))
+relabelHelp aut s = fromJust (Map.lookup s (Map.fromList $ zip (stateData aut) [0 .. (length (stateData aut))]))
 
 relabelAut :: Ord s => (AutData l s, s) -> (AutData l Int, Int)
 relabelAut (aut, s1) = (AD [relabelHelp aut s | s <- stateData aut]
@@ -136,15 +139,15 @@ relabelAut (aut, s1) = (AD [relabelHelp aut s | s <- stateData aut]
 
 -- take aut data and make a nice start state/end state
 cleanAutomata:: (AutData l Int, Int) -> (AutData l Int, Int)
-cleanAutomata (aut, s) = (AD (0:lastState:stateData aut)
+cleanAutomata (aut, s) = (AD (0:lastState:[x+1 | x <- stateData aut])
                           [lastState]
                           (cleanTransition (aut,s))
-                         , 0) where lastState = 1 + length (stateData aut)
+                         , 0) where lastState = 1+length (stateData aut)
  
 cleanTransition:: (AutData l Int, Int) -> [(Int, [(Maybe l, Int)])]
 cleanTransition (aut, s) = start ++ middle ++ end where
-  start = [(0, [(Nothing, s)])]
-  middle = [(x, transForState aut x) | x <- stateData aut, x `notElem` acceptData aut]
-  end = [(x, (Nothing, length (stateData aut) + 1) : transForState aut x) | x<- acceptData aut]
+  start = [(0, [(Nothing, s+1)])]
+  middle = [(x+1, addTuple 1 (transForState aut x)) | x <- stateData aut, x `notElem` acceptData aut]
+  end = [(x+1, (Nothing, length (stateData aut) + 1) : ( addTuple 1 (transForState aut x))) | x<- acceptData aut]
 
 \end{code}

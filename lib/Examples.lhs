@@ -40,7 +40,7 @@ wikiAutData = AD [0,1,2]
                  [(0, [(Just A, 0)
                       ,(Just B,1)])
                   ,(1, [(Just A, 2)
-                      ,(JUst B, 1)])
+                      ,(Just B, 1)])
                   ,(2, [(Just A, 1)
                        ,(Just B, 1)])]
 
