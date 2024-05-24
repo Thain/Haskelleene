@@ -33,6 +33,18 @@ myAutData = AD [1,2,3,4]        -- the states
                    ,(Just B,4)
                    ,(Just C,4)])]
 
+
+wikiAutData :: AutData Letter Int -- automata taken from Wikipedia Page on Kleenes Algorihtim
+wikiAutData = AD [0,1,2]
+                 [1]
+                 [(0, [(Just A, 0)
+                      ,(Just B,1)])
+                  ,(1, [(Just A, 2)
+                      ,(JUst B, 1)])
+                  ,(2, [(Just A, 1)
+                       ,(Just B, 1)])]
+
+
 myDACheck :: Bool
 myDACheck = detCheck myAutData
 
