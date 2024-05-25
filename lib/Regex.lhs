@@ -91,7 +91,6 @@ regexAccept (Star r) cs = any (regexAccept (Star r) . snd) (initCheck r cs)
 
 -- get all initial sequences of the word that match the regex
 initCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
-initCheck r w = filter (regexAccept r . fst) (splits w)
-
+initCheck r w = filter (regexAccept r . fst) $ splits w
 
 \end{code}

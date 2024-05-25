@@ -33,17 +33,21 @@ myAutData = AD [1,2,3,4]        -- the states
                    ,(Just B,4)
                    ,(Just C,4)])]
 
-
 wikiAutData :: AutData Letter Int -- automata taken from Wikipedia Page on Kleenes Algorihtim
-wikiAutData = AD [0,1,2]
+wikiAutData = AD [0,1]
                  [1]
                  [(0, [(Just A, 0)
-                      ,(Just B,1)])
-                  ,(1, [(Just A, 2)
-                      ,(Just B, 1)])
-                  ,(2, [(Just A, 1)
-                       ,(Just B, 1)])]
+                      ,(Just B, 1)
+                      ,(Just C, 1)])
+                 ,(1, [(Just A, 0)
+                      ,(Just B, 1)
+                      ,(Just C, 0)])]
 
+wikiDA :: DetAut Letter Int
+wikiDA = fromJust $ encodeDA wikiAutData
+
+wikiDAtoReg :: Regex Letter
+wikiDAtoReg = dautToReg wikiDA 0
 
 myDACheck :: Bool
 myDACheck = detCheck myAutData
@@ -51,6 +55,8 @@ myDACheck = detCheck myAutData
 myDA :: DetAut Letter Int
 myDA = fromJust $ encodeDA myAutData
 
+myDAtoReg :: Regex Letter
+myDAtoReg = dautToReg myDA 1
 
 -- an accepting sequence of inputs
 myInputs :: [Letter]

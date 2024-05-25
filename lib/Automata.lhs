@@ -67,20 +67,18 @@ encodeNA d = NA { nstates = stateData d
                 , ndelta = newDelta } where
   newDelta sym st = case lookup st tData of
                       Nothing -> []
-                      Just ls -> nub [ st' | (sym', st') <- ls, sym' == sym, sym' /= Nothing || st' /= st ]
-  tData = case (trsMerged rawTData) of
-                                True -> rawTData
-                                False -> mergeTrs rawTData
-  trsMerged = allUnq . (map fst)
+                      Just ls -> nub [ st' | (sym', st') <- ls, sym' == sym, isJust sym' || st' /= st ]
+  tData = if trsMerged rawTData then rawTData else mergeTrs rawTData
+  trsMerged = allUnq . map fst
   rawTData = transitionData d
 
 -- slow, so we don't always want to be calling this
 mergeTrs :: Eq s => TDict l s -> TDict l s
 mergeTrs [] = []
-mergeTrs (tr:trs) = mTr:(mergeTrs remTrs) where
-  mTr = (fst tr, fst prop ++ (snd tr))
+mergeTrs ((tr0,tr1):trs) = mTr:mergeTrs remTrs where
+  mTr = (tr0, fst prop ++ tr1)
   remTrs = snd prop
-  prop = propTrs (fst tr) trs
+  prop = propTrs tr0 trs
 
 -- for a given state, propagate all of its output together, and return
 -- all of them, as well as the transition data with those removed
@@ -88,9 +86,7 @@ mergeTrs (tr:trs) = mTr:(mergeTrs remTrs) where
 propTrs :: Eq s => s -> TDict l s -> ([(Maybe l,s)], TDict l s)
 propTrs _ [] = ([],[])
 propTrs st (tr:trs) = appendTuple resultTuple (propTrs st trs) where
-  resultTuple = case st == (fst tr) of
-                 True -> (snd tr,[])
-                 False -> ([],[tr])
+  resultTuple = if st == fst tr then (snd tr,[]) else ([],[tr])
                  
 -- put an NA back into autdata, e.g. to turn it into regex
 decode :: (Alphabet l, Eq s) => NDetAut l s -> AutData l s
