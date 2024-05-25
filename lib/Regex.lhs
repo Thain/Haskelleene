@@ -1,4 +1,4 @@
-\section{Reguler Expression Library}\label{sec:Regex}
+\section{Regular Expression Library}\label{sec:Regex}
 
 This is where we define the Kleene regular expression structure we will be using throughout the project.
 

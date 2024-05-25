@@ -1,7 +1,27 @@
 
-\section{Deterministic Automata Library}\label{sec:DetAut}
+\section{Automata and Regular Expressions}\label{sec:DetAut}
 
-This is where we define the deterministic automaton data structure we will be using throughout the project.
+We previously have defined non/determinisitc automata and regular expressions. 
+Next, perhaps unsuprisingly, since these are well known to be two sides of the same coin, we encode a method to transfer between them.
+\textbf{Possible to do:} and prove these operations are inverses of each other.
+Converting froma regex to a non-deterministic automata is relatively straightforward, so we begin with that.
+Second, we describe Kleene's Algorithim (a variation of the Floyd-Warshall Algorithim) in order to transform an automata into a regex.
+Finally, we note general problems with the above two steps as well as possible future methods to improve them.
+
+\subsection{Regular Expressions to Automata}
+
+Converting a regular expression into a non-dterminsitic automata is both straightforward and (mostly) intuitive. 
+We have defined a regular expression using an inductive constructor, similar to propositional logic. 
+This inductive construction readily allows us to recursive construct this an automata - with one general construction per regex operator.
+At a high level we can think of our algorithim as follows: first, the transition labels correspond to our alphabet; 
+second, generate a very simple automata for each atom (letter, epsilon, or empty string); 
+then attach these automata together in a well-behaved way for each operator. 
+Roughly, sequence corresponds to placing each automata one after the other, alternate to placing them in parralel, and star to folding the automata into a circle. 
+We will explain each of these operations more clearly at the appropriate section.
+As for any inductive construction we need our base cases, which, for a regular expression are: the Empty expression, the Epislon expression, and a single letter. 
+The simplest NDA which accepts no words is a single node with no accept states, a single node with a single accepting state accepts the empty word, and two nodes connected by a transition function labeled with our letter accepts said single letter.
+
+
 
 \begin{code}
 module Kleene where
@@ -21,10 +41,7 @@ import qualified Data.Map.Strict as Map
 -- As we add more states we need to relable them. The base states are 1 and 2, multiplying by 3, 13 is sequence, multiplying by 5 and 7 is Alt, multiplying by 11 is Star
 
 --useful function to glue states together
-transForState :: Eq s => AutData l s -> s -> [(Maybe l, s)]
-transForState aut s 
-  | isNothing $ lookup s $ transitionData aut = []
-  | otherwise = fromJust $ lookup s $ transitionData aut
+
 
 -- For each operator we define two corresponding functions. One outputs the automata data associated with that operator, 
 -- the other stitches and modifies the transition function across the inputs automata (mostly using Epsilon transitions)
@@ -42,15 +59,25 @@ fromReg :: (Alphabet l) => Regex l -> (NDetAut l Int, Int)
 fromReg reg = (encodeNA ndata,st)
   where (ndata,st) = regToAut reg
 
+\end{code}
+
+As we had into each inductive step, we note a few conventions. 
+First, an observant reader will have seen that our function outputs automata data with integer states. 
+Since we are inductively constructing automata we need to be adding new states while preserving the old ones (and their transition functions).
+Integer states make it very easy to relable them, and - as we will see later - make it much easier to run algorithims on.
+Below, you can see our function for the Seq operator alongside a helpful fetch function.
+
+\begin{code}
+
 seqRegAut :: (AutData l Int, Int) -> 
              (AutData l Int, Int) -> 
              (AutData l Int, Int)
 seqRegAut (aut1,s1) (aut2,s2) = 
   ( AD 
-    ([ x*13 | x <- stateData aut1 ] ++ [ x*3 | x <- stateData aut2 ])
-    [ 3*x | x <- acceptData aut2 ] 
-    (gluingSeq (aut1, s1) (aut2, s2))
-  , 13*s1)
+    ([ x*13 | x <- stateData aut1 ] ++ [ x*3 | x <- stateData aut2 ]) -- states
+    [ 3*x | x <- acceptData aut2 ] -- accepting states
+    (gluingSeq (aut1, s1) (aut2, s2)) -- transition function
+  , 13*s1) -- starting state
 
 gluingSeq :: (AutData l Int, Int) -> (AutData l Int, Int) -> 
              [(Int, [(Maybe l, Int)])]
@@ -58,6 +85,33 @@ gluingSeq (aut1, _) (aut2, s2) =  firstAut ++ middle ++ secondAut where
   firstAut = [(13*x, multTuple 13 (transForState aut1 x)) | x<- stateData aut1, x `notElem` acceptData aut1]
   middle = [(13*x, multTuple 13 (transForState aut1 x) ++ [(Nothing, 3*s2)]) | x<- acceptData aut1]
   secondAut = [(x*3, multTuple 3 (transForState aut2 x)) | x<- stateData aut2]
+
+transForState :: Eq s => AutData l s -> s -> [(Maybe l, s)]
+transForState aut s 
+  | isNothing $ lookup s $ transitionData aut = []
+  | otherwise = fromJust $ lookup s $ transitionData aut
+\end{code}
+
+This functoion takes two automata $aut1,aut2$ and glues them together by adding epsilon transitions between the accepting states of $aut1$ and the starting state of $aut2.$
+We need to add these epsilon transitions rather than merely identify the starting/ending in order to preserve tranitions out of said states.
+For example, if we glued the start/accepting states together in the following automata DIAGRAM
+we would accept abaa, where FINISH EXAMPLE.
+Additionally, we multiply the states in the first automata by 13 and states in the second automata by 3.
+In the gluing and star operator we have to add new states (in order to prevent the gluing issue above). 
+We always add a state labeled $1$ for a starting state and $2$ for an accepting state.
+Multiplication by prime numbers allows us to ensure that our new automaton \textit{both} preserves the transition function of its component parts \textit{and} had distinct state labels for every state.
+Each input for each operator has a unique prime number assigned to it:
+\begin{enumerate}
+\item Sequence: $13,3$
+\item Alternate: $5,7$
+\item Star: $11.$
+\end{enumerate}
+ 
+
+
+
+\begin{code}
+
 
 altRegAut :: (AutData l Int, Int) -> (AutData l Int, Int) -> (AutData l Int, Int)
 altRegAut (aut1, s1) (aut2, s2) = 
@@ -75,7 +129,13 @@ gluingAlt (aut1,s1) (aut2,s2) = start ++ firstAut ++endFirstAut ++ secondAut ++ 
   secondAut = [(x*7, multTuple 7 (transForState aut2 x)) | x <- stateData aut2, x `notElem` acceptData aut2]
   endFirstAut = [(x*5, (Nothing,2) : multTuple 5 (transForState aut1 x)) | x <- acceptData aut1]
   endSecondAut = [(x*7, (Nothing,2) : multTuple 7 (transForState aut2 x)) | x <- acceptData aut2]
+\end{code}
 
+Our construction for alternate is defined similarly to Sequence.
+We add a new initial and acceptance state to ensure that our gluing preserves the appropriate transition functions.
+Lastly, we define our Star construction as follows (alongside some helper functions):
+
+\begin{code}
 starRegAut :: (AutData l Int, Int) -> (AutData l Int,Int)
 starRegAut (aut, s) = 
   ( AD 
@@ -97,6 +157,21 @@ multTuple n ((a,b):xs) = (a,n*b) : multTuple n xs
 addTuple :: Int -> [(a,Int)] -> [(a,Int)]
 addTuple _ [] = []
 addTuple n ((a,b):xs) = (a,n+b) : multTuple n xs
+
+\end{code}
+For Star we add a single node which serves as both the intitial state and an accept state. 
+By connecting the beginning and ending of our starting automaton we create an abstract loop - which clearly corresponds to Star.
+Now that we have defined each construction, we provide a brief proof of the following lemma:
+
+\begin{lemma}
+Each regular expression $r$ gives rise to (at least one) non-deterministic automata, $D,$ such that\[L(r) = L(D).\]
+\end{lemma}
+
+\begin{proof}
+Let $r$ be an arbitrary regular expression and set $aut=(fst.fromReg) r.$ We contence that 
+
+\end{proof}
+\begin{code}
 -- -----------------------------
 -- Automaton to Regex Conversion
 -- -----------------------------
