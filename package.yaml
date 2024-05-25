@@ -15,6 +15,12 @@ dependencies:
 
 library:
   source-dirs: lib
+  exposed-modules:
+    - Basics
+    - Automata
+    - Examples
+    - Kleene
+    - Regex
   dependencies:
     - containers
     - QuickCheck

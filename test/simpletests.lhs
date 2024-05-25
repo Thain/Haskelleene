@@ -10,7 +10,7 @@ module Main where
 -- import Data.Maybe
 import Test.Hspec
 import Test.QuickCheck
-import Basics
+-- import Basics
 import Automata
 import Regex
 import Kleene
@@ -54,7 +54,9 @@ main = hspec $ do
     it "reg to NA should give the same result" $
       property $ \input -> regexAccept exampleRegex input ==
                            uncurry ndautAccept (fromReg exampleRegex) input
-
+    it "NA to reg should give the same result" $
+      property $ \input -> ndautAccept myNDA 1 input ==
+                           regexAutAccept (autToReg (decode myNDA, 1)) input
 \end{code}
 
 To run the tests, use \verb|stack test|.

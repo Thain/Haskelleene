@@ -16,8 +16,8 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Automata
       Basics
+      Automata
       Examples
       Kleene
       Regex

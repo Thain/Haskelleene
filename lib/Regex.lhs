@@ -73,16 +73,13 @@ regexAccept Epsilon [] = True
 regexAccept Epsilon _  = False
 -- if down to a single letter, only accept that letter (and if longer, reject too)
 regexAccept (L _) []   = False
-regexAccept (L l) [c] | l == c = True
-                      | otherwise = False
-regexAccept (L _) (_:_) = False
+regexAccept (L l) [c]  = l == c
+regexAccept (L _) _ = False
 -- optimisations for simple sequences (one part is just a letter)
 regexAccept (Seq (L _) _) [] = False
 regexAccept (Seq _ (L _)) [] = False
-regexAccept (Seq (L l) r) (c:cs) | l == c = regexAccept r cs
-                                 | otherwise = False
-regexAccept (Seq r (L l)) cs | last cs == l = regexAccept r (init cs)
-                             | otherwise = False
+regexAccept (Seq (L l) r) (c:cs) = l == c && regexAccept r cs 
+regexAccept (Seq r (L l)) cs     = last cs == l && regexAccept r (init cs)
 -- general Seq case is less efficient
 regexAccept (Seq r r') cs = any (regexAccept r' . snd) (initCheck r cs) 
 -- general Alt case pretty easy
@@ -95,4 +92,6 @@ regexAccept (Star r) cs = any (regexAccept (Star r) . snd) (initCheck r cs)
 -- get all initial sequences of the word that match the regex
 initCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
 initCheck r w = filter (regexAccept r . fst) (splits w)
+
+
 \end{code}

@@ -82,9 +82,12 @@ myNAutData = AD [1,2,3,4]         -- the states
 myNDA :: NDetAut Letter Int
 myNDA = encodeNA myNAutData
 
+myNDAtoReg :: Regex Letter
+myNDAtoReg = autToReg (decode myNDA, 1)
+
 -- what epsilon transitions does 1 have? should just be [2,3]
 nothingFrom1 :: [Int]
-nothingFrom1 = (ndelta myNDA) Nothing 1
+nothingFrom1 = ndelta myNDA Nothing 1
 
 myNInputsFalse :: [Letter]
 myNInputsFalse = [B,B,A]
@@ -107,7 +110,6 @@ exampleAut = AD [1,2,3] [2] [(1, [(Just "a", 1), (Just "b", 2)]), (2, [(Just "b"
 
 exampleAut2 :: AutData String Int
 exampleAut2 = AD [1,2,3,4] [4] [(1, [(Just "a", 2)]), (2, [(Just "a", 3)]), (3, [(Just "a", 4)])]
-
 
 -- Regexes
 
