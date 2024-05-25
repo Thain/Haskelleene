@@ -6,7 +6,7 @@ This is where we define the Kleene regular expression structure we will be using
 module Regex where
 
 import Basics -- contains all of our utility functions
-
+import Data.Maybe
 -- -----------------
 -- REGEX definitions 
 -- -----------------
@@ -35,7 +35,7 @@ instance Show l => Show (Regex l) where
   show (Star (L a)) = "(" ++ show a ++ "*)"
   show (Star r) = "(" ++ show r ++ ")*"
 -- if sticking with altl, seql, then this isn't quite right. need paren cases
-                                            
+
 
 -- QoL functions for sequencing or alternating lists of regexes
 seqList :: [Regex l] -> Regex l
@@ -93,20 +93,22 @@ regexAccept (Seq (L l) r) (c:cs) = l == c && regexAccept r cs
 regexAccept (Seq r (L l)) cs = last cs == l && regexAccept r (init cs)
 regexAccept (Seq Epsilon r) cs = regexAccept r cs
 -- general Seq case is less efficient
-regexAccept (Seq r r') cs = any (regexAccept r' . snd) (initCheck r cs) 
+regexAccept (Seq r r') cs = any (regexAccept r' . snd) $ trueInitCheck r cs
 -- general Alt case pretty easy
 regexAccept (Alt r r') cs = regexAccept r cs || regexAccept r' cs
 -- if word is empty, star is true
 regexAccept (Star _) [] = True
 -- general star case
-regexAccept (Star r) cs = any (regexAccept (Star r) . snd) (initCheck r cs)
+regexAccept (Star r) cs | regexAccept r [] = any (regexAccept (Star r) . snd) $ initCheck r cs
+                        | otherwise = any (regexAccept (Star r) . snd) $ trueInitCheck r cs
 
 -- get all initial sequences of the word that match the regex, except for
 -- the empty initial sequence (as this loops forever and goes nowhere)
 initCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
 initCheck r w = filter (regexAccept r . fst) $ init $ splits w
 
-
+trueInitCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
+trueInitCheck r w = filter (regexAccept r . fst) $ splits w
 
 -- these may eventually be useful so i won't delete them, but they're
 -- not getting used right now. --LC
@@ -118,18 +120,17 @@ maxLenStr Empty = Just 0
 maxLenStr Epsilon = Just 0
 maxLenStr (L _) = Just 1
 maxLenStr (Alt r r') = maxMaybe (maxLenStr r) (maxLenStr r')
-  where maxMaybe x y | x == Nothing = x
-                     | y == Nothing = y
+  where maxMaybe x y | isNothing x = x
+                     | isNothing y = y
                      | otherwise = max x y
-maxLenStr (Seq r r') = fmap sum $ sequence [(maxLenStr r), (maxLenStr r')]
+maxLenStr (Seq r r') = sum <$> sequence [maxLenStr r, maxLenStr r']
 maxLenStr (Star _) = Nothing
 
 loopSimpRgx :: Eq l => Regex l -> (Regex l,Int)
 loopSimpRgx r | simplifyRegex r == r = (r,0)
               | otherwise = (next, count)
   where next = fst loop
-        count = 1 + (snd loop)
+        count = 1 + snd loop
         loop = loopSimpRgx (simplifyRegex r)
-
 
 \end{code}

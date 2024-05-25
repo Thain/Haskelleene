@@ -35,6 +35,14 @@ instance Alphabet Letter where
 instance Arbitrary Letter where
   arbitrary = elements completeList
 
+data Bit = I | O deriving (Eq, Ord, Show)
+
+instance Alphabet Bit where
+  completeList = [I,O]
+
+instance Arbitrary Bit where
+  arbitrary = elements completeList
+
 type TDict l s = [(s, [(Maybe l, s)])]
 
 -- l is the type of our alphabet (most likely a finite set),
