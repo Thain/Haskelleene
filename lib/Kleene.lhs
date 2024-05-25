@@ -168,14 +168,62 @@ Each regular expression $r$ gives rise to (at least one) non-deterministic autom
 \end{lemma}
 
 \begin{proof}
-Let $r$ be an arbitrary regular expression and set $aut=(fst.fromReg) r.$ We contence that 
+Let $r$ be an arbitrary regular expression and set $aut=(fst.fromReg) r.$ First, consider some $w \in L(r)$ and proceed via induction to show that $w\in L(aut).$
+
+We believe the base cases are clear from construction and so move one
+
+
 
 \end{proof}
-\begin{code}
--- -----------------------------
--- Automaton to Regex Conversion
--- -----------------------------
 
+This construction was relatively straightforward since by looking at what each operator in a regular expression means an automata immediately suggests itself.
+The next algorithim, moving from automata to regular expressions, is far less intuitive, and encounters difficulties we will note in the final section.
+This complexity is due to the non-inductive/recurisve definition of automata as opposed to regex.
+
+\subsection{Automata to Regular}
+
+Here, we implement which take a non/determinisitc automata, a starting state, and ouputs a corresponding regular expression.
+The algorithim we use, called Kleene's Algorithim, allows us to impose a semi-recusrive structure on an automata which in turn allows us to extract a regular expression.
+First, we provide the implement of Kleene's Algorithim (as well as some motivation and examples) before explaining how Kleene's Algorithim can provide us with our desired conversion.
+We conclude with a brief overview of the helper functions we enlist throughout our implementation as well as a slightly different conversion (and why we opted with our method.)
+
+\subsubsection{Kleene's Algorithim}
+
+Below, you will find our implementation of Kleene's Algorithim;
+it take an automata (whose states are labelled $[0 . . n]$ exactly), and three integer $i,j,k$ (which correspond to states) and 
+outputs a regular expression corresponding to the set of all paths from state $i$ to state $j$ without passing through states higher than $k$.
+This is a rather strong structural requirement, but it allows us to define the algorithim recurivsely and - as we will show later in the report - it is easy to convert any automata into one with the correct state labels.
+
+\begin{code}
+kleeneAlgo:: Eq l => AutData l Int -> Int -> Int -> Int -> Regex l
+kleeneAlgo aut i j (-1) = 
+  if i==j 
+  then simplifyRegex (Alt Epsilon (altList [ maybe Epsilon L a | a <- successorSet aut i j]))
+  else simplifyRegex (altList [ maybe Epsilon L a | a <- successorSet aut i j])
+kleeneAlgo aut i j k = 
+  simplifyRegex (Alt (simplifyRegex $ kleeneAlgo aut i j (k-1)) 
+                     (simplifyRegex $ seqList [ simplifyRegex $ kleeneAlgo aut i k (k-1)
+                                              , simplifyRegex $ Star $ kleeneAlgo aut k k (k-1)
+                                              , simplifyRegex $ kleeneAlgo aut k j (k-1) ]))
+\end{code}
+Let us quickly dig in what this code actually means before moving onto an example.
+The algoritihim succsessively removes states by incrementing $k$ downwards.
+At each step we remove the highest state and nicely add its associate transition labels to the remaining states.
+If our regex to automata algoritihm worked by building up an automata to follow a regular expression, Kleene's Algorithm works by pulling a fully glued automata apart step by step.
+When $k=-1$, we want to return a regex corresponding to the set of paths from $i$ directly to $j$ without stopping at any either state along the way.
+This is simply the set of transition labels which connect $i$ to $j$ (alongside Epsilon if $i=j$.)
+However, if $k>-1$, we need to remove the $k$'th state and shift the transition functions into and out of $k$ amidst the rest of the automata.
+First, we don't touch any of the paths which avoid $k$ by including $kleeneAlgo aut i j (k-1).$
+The remaining sequence can be viewed as: take any path to you want to $k$ but stop \textit{as soon as} you reach $k$ for the first time;
+then, take any path from $k$ to $k$ as many times as you want (we need the Star here because this algorithim does not normally permit loops);
+finally, take any path from $k$ to $j.$
+As we will see in the following example, this entire process can be though of as a single transition lable encoding all of the data that used to be at $k.$
+By removing every state, we are left with a single arrow which corresponds to our desired regular expression.
+
+TIKZ EXAMPLE.
+
+With this broad motivation, we can know discuss how to implement the algoritihm to provide our desirec conversion:
+\begin{code}
 -- Take a collection of data and starting states, outputs a regular expression which corresponds to the language. This version creates a nice first and last state
 autToRegSlow :: Eq l => Ord s => (AutData l s, s)-> Regex l
 autToRegSlow (aut, s)= kleeneAlgo intAut 0 lastState lastState where 
@@ -191,23 +239,24 @@ autToReg (aut, s)= altList [kleeneAlgo intAut firstState a lastState | a <- acce
   lastState = length (stateData intAut) - 1
 
 --following the Wikipedia page, this function recursively removes elements and uses the removed transition lables to construct the regex. 
-kleeneAlgo:: Eq l => AutData l Int -> Int -> Int -> Int -> Regex l
-kleeneAlgo aut i j (-1) = 
-  if i==j 
-  then simplifyRegex (Alt Epsilon (altList [ maybe Epsilon L a | a <- successorSet aut i j]))
-  else simplifyRegex (altList [ maybe Epsilon L a | a <- successorSet aut i j])
-kleeneAlgo aut i j k = 
-  simplifyRegex (Alt (simplifyRegex $ kleeneAlgo aut i j (k-1)) 
-                     (simplifyRegex $ seqList [ simplifyRegex $ kleeneAlgo aut i k (k-1)
-                                              , simplifyRegex $ Star $ kleeneAlgo aut k k (k-1)
-                                              , simplifyRegex $ kleeneAlgo aut k j (k-1) ]))
+
+\end{code}
+This takes an automata (and a starting state), transforms that automata into one with the appropriate state labels and then applies the algorithim on the intial state and every accepting state.
+For a given accepting state $a$, (kleeneAlgo aut firstState $a$ lastState) provides a regular expression corresponding to the paths from the intial state to $a$ with no restrictions - we have set $k$ to be higher than every state label.
+This is exactly what we were looking for, given our previous understanding of the algoritihim itself.
+
+Below we briefly describe the helper functions needed for this implementation as well as an alternate definition of autToReg, whose problems we will expound upon in the last section of this chapter.
+
+\begin{code}
 
 -- takes some automata data and two states, s1, s2. Ouputs all the ways to get s2 from s1
 successorSet :: Eq s => AutData l s -> s -> s -> [Maybe l]
 successorSet aut s1 s2 
   | isNothing (lookup s1 (transitionData aut) ) = [] -- if there are no successors
   | otherwise = map fst (filter (\w -> s2 == snd w) (fromJust $ lookup s1 (transitionData aut)) )
-
+\end{code}
+This function simply returns returns all the ways to directly move between two states for the base case of Kleenes Algorithim.
+\begin{code}
 -- states as integer makes everything easier. We use a dictionary to relabel in one sweep per say
 relabelHelp :: Ord s => AutData l s -> s -> Int
 relabelHelp aut s = fromJust (Map.lookup s (Map.fromList $ zip (stateData aut) [0 .. (length (stateData aut))]))
@@ -218,6 +267,10 @@ relabelAut (aut, s1) = (AD [relabelHelp aut s | s <- stateData aut]
                            [(relabelHelp aut s, [ (a, relabelHelp aut b)| (a,b) <- transForState aut s] ) | s<- stateData aut]
                        , relabelHelp aut s1)
 
+\end{code}
+As mentioned, we need to convert an arbitrary automata to one with well-behaved state labels in order to define Kleene's Algorithim. 
+These functions do so handily via the use of a dictionary.
+\begin{code}
 -- take aut data and make a nice start state/end state
 cleanAutomata:: (AutData l Int, Int) -> (AutData l Int, Int)
 cleanAutomata (aut, s) = (AD (0:lastState:[x+1 | x <- stateData aut])
@@ -231,6 +284,13 @@ cleanTransition (aut, s) = start ++ middle ++ end where
   middle = [(x+1, addTuple 1 (transForState aut x)) | x <- stateData aut, x `notElem` acceptData aut]
   end = [(x+1, (Nothing, length (stateData aut) + 1) : addTuple 1 (transForState aut x)) | x<- acceptData aut]
 
+
+\end{code}
+These last peices of code allow us to define a version of autToReg which takes in multiple intitial states rather than just one. 
+It does so by adding a new intitial (and accepting) state after the relabelling - connected via epsilon transition.
+While this construction is more general, it adds several more transitions which further increase the size of the corresponding regular expression.
+More on this issue in the following section.
+\begin{code}
 -- Another implementation of Automata to Reg
 -- We assume the automata is deterministic 
 
@@ -248,4 +308,10 @@ dautToRegSub daut s0 (s1:ss) sn = simplifyRegex $ Alt reg1 $ Seq reg2 $ Seq (Sta
         reg3 = simplifyRegex $ dautToRegSub daut s1 ss s1
         reg4 = simplifyRegex $ dautToRegSub daut s1 ss sn
 
+
+
 \end{code}
+
+\subsection{Issues with the Algorithims}
+
+Notes on why it took big and why it cant be fixed
