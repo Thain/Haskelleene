@@ -9,7 +9,7 @@ Our first major goal is to implement (non)deterministic automata. Recall that an
 module Automata where
 
 import Basics ( Alphabet(..), alphIter ) -- contains all of our utility functions
-import Data.Maybe ( isJust, fromJust )
+import Data.Maybe ( isJust, fromJust, isNothing )
 import Data.List ( nub )
 import qualified Data.Set as Set
 \end{code}
@@ -34,6 +34,11 @@ A consequence of using the same data type to possibly encode both a deterministi
 -- letter, output all possible input/output pairs.
 getTrs :: (Eq a, Eq b) => [(a,[(b,a)])] -> a -> b -> [(b,a)]
 getTrs allTrs s0 ltr = filter (\x -> fst x == ltr) $ filter (\x -> fst x == s0) allTrs >>= snd
+
+trsOf :: Eq s => AutData l s -> s -> [(Maybe l, s)]
+trsOf aut s 
+  | isNothing $ lookup s $ transitionData aut = []
+  | otherwise = fromJust $ lookup s $ transitionData aut
 
 -- utility for checking if a list has duplicates
 allUnq:: Eq a => [a] -> Bool

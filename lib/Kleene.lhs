@@ -1,5 +1,5 @@
 
-\section{Automata and Regular Expressions}\label{sec:DetAut}
+\section{Automata and Regular Expressions}\label{sec:Kleene}
 
 We previously have defined non/deterministic automata and regular expressions. 
 Next, perhaps unsurprisingly, since these are well known to be two sides of the same coin, we encode a method to transfer between them.
@@ -18,11 +18,11 @@ second, generate a very simple automaton for each atom (letter, epsilon, or empt
 then attach these automata together in a well-behaved way for each operator. 
 Roughly, sequence corresponds to placing each automaton one after the other, alternate to placing them in parallel, and star to folding the automaton into a circle. 
 We will explain each of these operations more clearly at the appropriate section.
-As for any inductive construction we need our base cases. Note these choices are not unique (there are many automata that accept no words) but we go with the simplest ones for each case.
+As for any inductive construction we need our base cases. Note these choices are not unique (there are many automata that accept no words) but we go with the simplest ones for each case:
 \begin{align*}
-\texttt{Empty}: \text{ a single, non-accepting, state.} \\
-\texttt{Epsilon}: \text{ a single, accepting, state.} \\
-\texttt{L a}: \text{ a non-accepting state, connected to an accepting one by $a$}
+  &\texttt{Empty}: \text{ a single, non-accepting, state.} \\
+  &\texttt{Epsilon}: \text{ a single, accepting, state.} \\
+  &\texttt{L a}: \text{ a non-accepting state, connected to an accepting one by $a$}
 \end{align*}
 \begin{code}
 module Kleene where
@@ -33,6 +33,8 @@ import Regex       -- contains regex definitions
 import Data.Maybe
 
 import qualified Data.Map.Strict as Map
+
+type RgxAutData l = (AutData l Int, Int)
 
 -- ---------------
 -- REGEX to DetAut
@@ -47,7 +49,7 @@ import qualified Data.Map.Strict as Map
 -- For each operator we define two corresponding functions. One outputs the automata data associated with that operator, 
 -- the other stitches and modifies the transition function across the inputs automata (mostly using Epsilon transitions)
 
-regToAut :: Regex l -> (AutData l Int, Int) 
+regToAut :: Regex l -> RgxAutData l
 -- gives an integer automata and a starting state
 regToAut Empty = (AD [1] [] [], 1)
 regToAut Epsilon = (AD [1] [1] [], 1)
@@ -70,27 +72,20 @@ Below, you can see our function for the Seq operator alongside a helpful fetch f
 
 \begin{code}
 
-seqRegAut :: (AutData l Int, Int) -> 
-             (AutData l Int, Int) -> 
-             (AutData l Int, Int)
+seqRegAut :: RgxAutData l -> RgxAutData l -> RgxAutData l
 seqRegAut (aut1,s1) (aut2,s2) = 
-  ( AD 
+  (adata, 13*s1) where
+  adata = AD 
     ([ x*13 | x <- stateData aut1 ] ++ [ x*3 | x <- stateData aut2 ]) -- states
-    [ 3*x | x <- acceptData aut2 ] -- accepting states
-    (gluingSeq (aut1, s1) (aut2, s2)) -- transition function
-  , 13*s1) -- starting state
+     [ 3*x | x <- acceptData aut2 ]                                   -- accepting states
+     (gluingSeq (aut1, s1) (aut2, s2))                                -- transition function
 
-gluingSeq :: (AutData l Int, Int) -> (AutData l Int, Int) -> 
-             [(Int, [(Maybe l, Int)])]
-gluingSeq (aut1, _) (aut2, s2) =  firstAut ++ middle ++ secondAut where
-  firstAut = [(13*x, multTuple 13 (transForState aut1 x)) | x<- stateData aut1, x `notElem` acceptData aut1]
-  middle = [(13*x, multTuple 13 (transForState aut1 x) ++ [(Nothing, 3*s2)]) | x<- acceptData aut1]
-  secondAut = [(x*3, multTuple 3 (transForState aut2 x)) | x<- stateData aut2]
-
-transForState :: Eq s => AutData l s -> s -> [(Maybe l, s)]
-transForState aut s 
-  | isNothing $ lookup s $ transitionData aut = []
-  | otherwise = fromJust $ lookup s $ transitionData aut
+gluingSeq :: RgxAutData l -> RgxAutData l -> [(Int, [(Maybe l, Int)])]
+gluingSeq (aut1, _) (aut2, s2) =  fstAut ++ mid ++ sndAut where
+  fstAut = [mulAut 13 x (aut1 `trsOf` x) | x <- stateData aut1, x `notElem` acceptData aut1]
+  mid = [mulAut 13 x ((aut1 `trsOf` x)++[(Nothing,3*s2)])  | x <- acceptData aut1]
+  sndAut = [mulAut 3 x (aut2 `trsOf` x) | x <- stateData aut2]  
+  mulAut n x trs = (x*n, multTuple n trs)
 \end{code}
 
 This function takes two automata $aut1,aut2$ and glues them together by adding epsilon transitions between the accepting states of $aut1$ and the starting state of $aut2.$
@@ -109,7 +104,7 @@ Each input for each operator has a unique prime number assigned to it:
 \end{enumerate}
  
 \begin{code}
-altRegAut :: (AutData l Int, Int) -> (AutData l Int, Int) -> (AutData l Int, Int)
+altRegAut :: RgxAutData l -> RgxAutData l -> RgxAutData l
 altRegAut (aut1, s1) (aut2, s2) = 
   ( AD 
     ([1,2] ++ [ x*5 | x<- stateData aut1 ] ++ [ x*7 | x<- stateData aut2 ])
@@ -117,14 +112,13 @@ altRegAut (aut1, s1) (aut2, s2) =
     (gluingAlt (aut1, s1) (aut2, s2))
   , 1 )
 
-gluingAlt :: (AutData l Int, Int)->(AutData l Int, Int) -> 
-             [(Int, [(Maybe l, Int)])]
+gluingAlt :: RgxAutData l -> RgxAutData l -> [(Int, [(Maybe l, Int)])]
 gluingAlt (aut1,s1) (aut2,s2) = start ++ firstAut ++endFirstAut ++ secondAut ++ endSecondAut where
   start = [(1, [(Nothing, s1*5), (Nothing, s2*7)])]
-  firstAut = [(x*5, multTuple 5 (transForState aut1 x)) | x <- stateData aut1, x `notElem` acceptData aut1]
-  secondAut = [(x*7, multTuple 7 (transForState aut2 x)) | x <- stateData aut2, x `notElem` acceptData aut2]
-  endFirstAut = [(x*5, (Nothing,2) : multTuple 5 (transForState aut1 x)) | x <- acceptData aut1]
-  endSecondAut = [(x*7, (Nothing,2) : multTuple 7 (transForState aut2 x)) | x <- acceptData aut2]
+  firstAut = [(x*5, multTuple 5 (aut1 `trsOf` x)) | x <- stateData aut1, x `notElem` acceptData aut1]
+  secondAut = [(x*7, multTuple 7 (aut2 `trsOf` x)) | x <- stateData aut2, x `notElem` acceptData aut2]
+  endFirstAut = [(x*5, (Nothing,2) : multTuple 5 (aut1 `trsOf` x)) | x <- acceptData aut1]
+  endSecondAut = [(x*7, (Nothing,2) : multTuple 7 (aut2 `trsOf` x)) | x <- acceptData aut2]
 \end{code}
 
 Our construction for alternate is defined similarly to Sequence.
@@ -132,7 +126,7 @@ We add a new initial and acceptance state to ensure that our gluing preserves th
 Lastly, we define our Star construction as follows (alongside some helper functions):
 
 \begin{code}
-starRegAut :: (AutData l Int, Int) -> (AutData l Int,Int)
+starRegAut :: RgxAutData l -> RgxAutData l
 starRegAut (aut, s) = 
   ( AD 
     (1:[x*11 | x<- stateData aut])
@@ -140,11 +134,11 @@ starRegAut (aut, s) =
     (gluingStar (aut, s))
   , 1)
 
-gluingStar :: (AutData l Int, Int)-> [(Int, [(Maybe l, Int)])]
+gluingStar :: RgxAutData l -> [(Int, [(Maybe l, Int)])]
 gluingStar (aut1, s1) = start ++ middle ++ end where
   start = [(1, [(Nothing, s1*11)])]
-  middle = [(x*11, multTuple 11 (transForState aut1 x))| x<-stateData aut1, x `notElem` acceptData aut1]
-  end = [(a*11, (Nothing, 1) : multTuple 11 (transForState aut1 a)) | a <- acceptData aut1]
+  middle = [(x*11, multTuple 11 (aut1 `trsOf` x))| x<-stateData aut1, x `notElem` acceptData aut1]
+  end = [(a*11, (Nothing, 1) : multTuple 11 (aut1 `trsOf` a)) | a <- acceptData aut1]
 
 multTuple :: Int -> [(a,Int)] -> [(a,Int)]
 multTuple _ [] = []
@@ -256,10 +250,10 @@ This function simply returns returns all the ways to directly move between two s
 relabelHelp :: Ord s => AutData l s -> s -> Int
 relabelHelp aut s = fromJust (Map.lookup s (Map.fromList $ zip (stateData aut) [0 .. (length (stateData aut))]))
 
-relabelAut :: Ord s => (AutData l s, s) -> (AutData l Int, Int)
+relabelAut :: Ord s => (AutData l s, s) -> RgxAutData l
 relabelAut (aut, s1) = (AD [relabelHelp aut s | s <- stateData aut]
                            [relabelHelp aut s| s<- acceptData aut]
-                           [(relabelHelp aut s, [ (a, relabelHelp aut b)| (a,b) <- transForState aut s] ) | s<- stateData aut]
+                           [(relabelHelp aut s, [ (a, relabelHelp aut b)| (a,b) <- aut `trsOf` s] ) | s<- stateData aut]
                        , relabelHelp aut s1)
 
 \end{code}
@@ -267,17 +261,17 @@ As mentioned, we need to convert an arbitrary automaton to one with well-behaved
 These functions do so handily via the use of a dictionary.
 \begin{code}
 -- take aut data and make a nice start state/end state
-cleanAutomata:: (AutData l Int, Int) -> (AutData l Int, Int)
+cleanAutomata:: RgxAutData l -> RgxAutData l
 cleanAutomata (aut, s) = (AD (0:lastState:[x+1 | x <- stateData aut])
                              [lastState]
                              (cleanTransition (aut,s))
                          ,0) where lastState = 1+length (stateData aut)
  
-cleanTransition:: (AutData l Int, Int) -> [(Int, [(Maybe l, Int)])]
+cleanTransition:: RgxAutData l -> [(Int, [(Maybe l, Int)])]
 cleanTransition (aut, s) = start ++ middle ++ end where
   start = [(0, [(Nothing, s+1)])]
-  middle = [(x+1, addTuple 1 (transForState aut x)) | x <- stateData aut, x `notElem` acceptData aut]
-  end = [(x+1, (Nothing, length (stateData aut) + 1) : addTuple 1 (transForState aut x)) | x<- acceptData aut]
+  middle = [(x+1, addTuple 1 (aut `trsOf` x)) | x <- stateData aut, x `notElem` acceptData aut]
+  end = [(x+1, (Nothing, length (stateData aut) + 1) : addTuple 1 (aut `trsOf` x)) | x<- acceptData aut]
 
 
 \end{code}
