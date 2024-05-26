@@ -11,7 +11,7 @@ Finally, we will note general problems with the above two steps as well as possi
 \begin{code}
 module Kleene where
 
-import Basics     ( Alphabet(..) )
+import Alphabet   ( Alphabet(..) )
 import Automata   ( AutData(..), DetAut(..), NDetAut(..), encodeNA, trsOf )
 import Regex      ( Regex(..), simplifyRegex, altList, seqList )
 import Data.Maybe ( fromJust, isNothing )

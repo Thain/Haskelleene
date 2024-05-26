@@ -8,7 +8,7 @@ Our first major goal is to implement (non)deterministic automata. Recall that an
 
 module Automata where
 
-import Basics ( Alphabet(..), alphIter ) -- contains all of our utility functions
+import Alphabet ( Alphabet(..), alphIter ) -- contains all of our utility functions
 import Data.Maybe ( isJust, fromJust, isNothing )
 import Data.List ( nub )
 import qualified Data.Set as Set

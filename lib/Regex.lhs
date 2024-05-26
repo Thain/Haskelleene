@@ -8,7 +8,7 @@ In this section, we will define regular expressions, in the Kleene algebraic sen
 
 The following serves as our definition of the \textsf{Regex} type. First we define our base case constructors, \texttt{Empty}, \texttt{Epsilon}, and \texttt{L l}. Note the distinction between \texttt{Empty} and \texttt{Epsilon} type constructors. The former is the regex representing the empty language, that is, the language that has no words in it. The latter represents the empty string, which is the word with no letters, and as a regular expression is the string language containing one string: the empty string.
 
-Note also that we use a type parameter \texttt{l} for this type. This is so that we can use different input alphabets if we so choose; see the \texttt{Basics} module for the definition of the \texttt{Alphabet} type class in Section~\ref{subsec:alphabet}.
+Note also that we use a type parameter \texttt{l} for this type. This is so that we can use different input alphabets if we so choose; see the \texttt{Alphabet} module for the definition of the \texttt{Alphabet} type class in Section~\ref{sec:Alphabet}.
 
 \begin{code}
 data Regex l = Empty | 

@@ -1,9 +1,9 @@
 
-name: report
+name: haskelleene
 version: 0.1.0.0
-synopsis: My Haskell project
-description: See report.pdf
-maintainer: My Name <my.email@example.com>
+synopsis: Haskelleene, Implementing Finite Automata and Regular Expressions
+description: See haskelleene.pdf
+maintainer: Liam Chung <lwalkerchung@gmail.com>
 category: Logic
 
 ghc-options: -Wall
@@ -16,7 +16,7 @@ dependencies:
 library:
   source-dirs: lib
   exposed-modules:
-    - Basics
+    - Alphabet
     - Automata
     - Examples
     - Kleene
@@ -31,13 +31,13 @@ executables:
     main: Main.lhs
     source-dirs: exec
     dependencies:
-      - report
+      - haskelleene
 
 tests:
   simpletests:
     main: simpletests.lhs
     source-dirs: test
     dependencies:
-      - report
+      - haskelleene
       - QuickCheck
       - hspec

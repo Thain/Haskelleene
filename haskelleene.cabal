@@ -4,25 +4,25 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           report
+name:           haskelleene
 version:        0.1.0.0
-synopsis:       My Haskell project
-description:    See report.pdf
+synopsis:       Haskelleene, Implementing Finite Automata and Regular Expressions
+description:    See haskelleene.pdf
 category:       Logic
-maintainer:     My Name <my.email@example.com>
+maintainer:     Liam Chung <lwalkerchung@gmail.com>
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 
 library
   exposed-modules:
-      Basics
+      Alphabet
       Automata
       Examples
       Kleene
       Regex
   other-modules:
-      Paths_report
+      Paths_haskelleene
   hs-source-dirs:
       lib
   ghc-options: -Wall
@@ -36,29 +36,29 @@ library
 executable myprogram
   main-is: Main.lhs
   other-modules:
-      Paths_report
+      Paths_haskelleene
   hs-source-dirs:
       exec
   ghc-options: -Wall
   build-depends:
       QuickCheck
     , base
+    , haskelleene
     , random
-    , report
   default-language: Haskell2010
 
 test-suite simpletests
   type: exitcode-stdio-1.0
   main-is: simpletests.lhs
   other-modules:
-      Paths_report
+      Paths_haskelleene
   hs-source-dirs:
       test
   ghc-options: -Wall
   build-depends:
       QuickCheck
     , base
+    , haskelleene
     , hspec
     , random
-    , report
   default-language: Haskell2010

@@ -22,7 +22,12 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 auto
-report*fdb*
+haskelleene.fdb*
+haskelleene.out
+haskelleene.aux
+haskelleene.bbl
+haskelleene.blg
+report.fdb*
 report.out
 report.aux
 report.bbl

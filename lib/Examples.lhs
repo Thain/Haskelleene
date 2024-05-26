@@ -15,7 +15,7 @@ We begin by including the relevant modules.
 \begin{code}
 module Examples where
 
-import Basics ( Letter(..) )
+import Alphabet ( Letter(..) )
 import Automata
     ( NDetAut,
       DetAut,
