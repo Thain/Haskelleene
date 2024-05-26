@@ -1,14 +1,14 @@
 \contentsline {section}{\numberline {1}Basic Library}{3}{section.1}%
 \contentsline {subsection}{\numberline {1.1}The Alphabet}{3}{subsection.1.1}%
-\contentsline {subsection}{\numberline {1.2}Automata}{3}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.2}Deterministic and Non-Deterministic Automata}{3}{subsection.1.2}%
 \contentsline {subsection}{\numberline {1.3}Regular Expression Library}{7}{subsection.1.3}%
-\contentsline {section}{\numberline {2}Automata and Regular Expressions}{10}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Regular Expressions to Automata}{10}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Automata to Regular}{13}{subsection.2.2}%
-\contentsline {subsubsection}{\numberline {2.2.1}Kleene's Algorithim}{14}{subsubsection.2.2.1}%
-\contentsline {subsection}{\numberline {2.3}Issues with the Algorithims}{16}{subsection.2.3}%
-\contentsline {section}{\numberline {3}Examples and Testing}{16}{section.3}%
-\contentsline {section}{\numberline {4}Wrapping it up in an exectuable}{18}{section.4}%
-\contentsline {section}{\numberline {5}Simple Tests}{19}{section.5}%
-\contentsline {section}{\numberline {6}Conclusion}{20}{section.6}%
-\contentsline {section}{Bibliography}{20}{section.6}%
+\contentsline {section}{\numberline {2}Automata and Regular Expressions}{11}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Regular Expressions to Automata}{11}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Automata to Regular}{14}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}Kleene's Algorithim}{15}{subsubsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.3}Issues with the Algorithms}{17}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Examples and Testing}{17}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Examples of Automata and Regular Expressions}{18}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Testing Behavioural Equivalence}{20}{subsection.3.2}%
+\contentsline {section}{\numberline {4}Conclusion}{21}{section.4}%
+\contentsline {section}{Bibliography}{21}{section.4}%
