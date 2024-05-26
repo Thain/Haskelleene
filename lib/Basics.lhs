@@ -296,7 +296,7 @@ autToReg (aut, s)= kleeneAlgo intAut 0 lastState lastState where
  lastState = length (stateData intAut) - 1 
 --autToReg aut [s]= kleeneAlgo newAut 0 (length stateData aut) (length stateData aut) where newAut = cleanAutomata . relableAut aut
 
---following the Wikipedia page, this function recursively removes elements and uses the removed transition lables to construct the regex. 
+--following the Wikipedia page, this function recursively removes elements and uses the removed transition labels to construct the regex. 
 kleeneAlgo:: Eq l => AutData l Int -> Int -> Int -> Int -> Regex l
 kleeneAlgo aut i j (-1) = simplifyRegex (if i==j 
                                          then Alt Epsilon (altSet [ maybe Epsilon L a | a <- successorSet aut i j]) 
@@ -322,7 +322,7 @@ seqSet [] = Empty
 seqSet [x] = x
 seqSet (x:xs) = Seq x (seqSet xs)
 
--- states as integer makes everything easier. We use a dictionary to relable in one sweep per say
+-- states as integer makes everything easier. We use a dictionary to relabel in one sweep per say
 relableHelp :: Ord s => AutData l s -> s -> Int
 relableHelp aut s = fromJust (Map.lookup s (Map.fromList $ zip (stateData aut) [1 .. (length (stateData aut)+1)]))
 
