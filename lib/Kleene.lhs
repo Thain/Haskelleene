@@ -83,8 +83,29 @@ transForState aut s
 
 This function takes two automata $aut1,aut2$ and glues them together by adding epsilon transitions between the accepting states of $aut1$ and the starting state of $aut2.$
 We need to add these epsilon transitions rather than merely identify the starting/ending in order to preserve transitions out of said states.
-For example, if we glued the start/accepting states together in the following automaton DIAGRAM
-we would accept abaa, where FINISH EXAMPLE.
+For example, if we identify states 1 and 2 in the following example
+\begin{center}
+\begin{tikzpicture}[scale=0.2]
+\tikzstyle{every node}+=[inner sep=0pt]
+\draw [black] (20.6,-14.6) circle (3);
+\draw (20.6,-14.6) node {$0$};
+\draw [black] (20.6,-14.6) circle (2.4);
+\draw [black] (33.2,-15.3) circle (3);
+\draw (33.2,-15.3) node {$1$};
+\draw [black] (33.2,-15.3) circle (2.4);
+\draw [black] (40.3,-16.5) circle (3);
+\draw (40.3,-16.5) node {$2$};
+\draw [black] (37.4,-31.2) circle (3);
+\draw (37.4,-31.2) node {$4$};
+\draw [black] (22.1,-31.2) circle (3);
+\draw (22.1,-31.2) node {$5$};
+\draw [black] (20.87,-17.59) -- (21.83,-28.21);
+\fill [black] (21.83,-28.21) -- (22.26,-27.37) -- (21.26,-27.46);
+\end{tikzpicture}
+\end{center}
+
+we would change the language from $ab^*a^*b$ to $a(b^*a^*)^*b$. Thus, we add epsilon transitions.
+
 Additionally, we multiply the states in the first automaton by 13 and states in the second automaton by 3.
 In the gluing and star operator we have to add new states (in order to prevent the gluing issue above). 
 We always add a state labeled $1$ for a starting state and $2$ for an accepting state.
@@ -191,7 +212,31 @@ finally, take any path from $k$ to $j.$
 As we will see in the following example, this entire process can be though of as a single transition label encoding all of the data that used to be at $k.$
 By removing every state, we are left with a single arrow which corresponds to our desired regular expression.
 
-TIKZ EXAMPLE.
+In the following toy example, we apply the algorithim to this automata with intial state $0$ and accepting state $1$:
+\begin{center}
+\begin{tikzpicture}[scale=0.2]
+\tikzstyle{every node}+=[inner sep=0pt]
+\draw [black] (20.6,-14.6) circle (3);
+\draw (20.6,-14.6) node {$0$};
+\draw [black] (20.6,-14.6) circle (2.4);
+\draw [black] (33.2,-15.3) circle (3);
+\draw (33.2,-15.3) node {$1$};
+\draw [black] (33.2,-15.3) circle (2.4);
+\draw [black] (40.3,-16.5) circle (3);
+\draw (40.3,-16.5) node {$2$};
+\draw [black] (37.4,-31.2) circle (3);
+\draw (37.4,-31.2) node {$4$};
+\draw [black] (22.1,-31.2) circle (3);
+\draw (22.1,-31.2) node {$5$};
+\draw [black] (20.87,-17.59) -- (21.83,-28.21);
+\fill [black] (21.83,-28.21) -- (22.26,-27.37) -- (21.26,-27.46);
+\end{tikzpicture}
+\end{center}
+
+We apply the algorithim to $0$ (the starting state) $1$ (the accepting state) and $2$ (the largest state.) 
+By removing $2$ from the state space (which is what incrementing $k$ does), we get
+\[(a\epsilon^*b)+a\]
+which is exactly the regular expression corresponding to this automata is. Hopefully this very simple example has highlighted the motivation and process behind the algorithim.
 
 With this broad motivation, we can know discuss how to implement the algorithm to provide our desired conversion:
 \begin{code}
