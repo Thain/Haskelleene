@@ -1,0 +1,64 @@
+\usepackage{tikz-cd,quiver}
+
+\usepackage{wasysym}
+
+\usepackage[utf8]{inputenc}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows,trees,positioning,shapes,patterns}
+\usetikzlibrary{intersections,calc,fpu,decorations.pathreplacing}
+
+\usepackage[T1]{fontenc} % better fonts
+
+% stuff from liam's prelude file
+\newcommand{\no}{\noindent}
+\newcommand{\vs}{\vspace{1\baselineskip}} %add one vertical space
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Q}{\mathbb{Q}}
+
+\DeclareMathOperator{\im}{Im}
+
+\newcommand{\inv}{^{-1}}
+\newcommand{\id}{\text{id}}
+\renewcommand{\hom}{\text{Hom}}
+\renewcommand{\phi}{\varphi}
+
+\newcommand{\inj}{\hookrightarrow}
+\newcommand{\surj}{\twoheadrightarrow}
+
+
+% Haskell code listings in our own style
+\usepackage{listings,color}
+\definecolor{lightgrey}{gray}{0.35}
+\definecolor{darkgrey}{gray}{0.20}
+\definecolor{lightestyellow}{rgb}{1,1,0.92}
+\definecolor{dkgreen}{rgb}{0,.2,0}
+\definecolor{dkblue}{rgb}{0,0,.2}
+\definecolor{dkyellow}{cmyk}{0,0,.7,.5}
+\definecolor{lightgrey}{gray}{0.4}
+\definecolor{gray}{gray}{0.50}
+\lstset{
+  language        = Haskell,
+  basicstyle      = \scriptsize\ttfamily,
+  keywordstyle    = \color{dkblue},     stringstyle     = \color{red},
+  identifierstyle = \color{dkgreen},    commentstyle    = \color{gray},
+  showspaces      = false,              showstringspaces= false,
+  rulecolor       = \color{gray},       showtabs        = false,
+  tabsize         = 8,                  breaklines      = true,
+  xleftmargin     = 8pt,                xrightmargin    = 8pt,
+  frame           = single,             stepnumber      = 1,
+  aboveskip       = 10pt plus 3pt,
+  belowskip       = 1pt plus 1pt
+}
+\lstnewenvironment{code}[0]{}{}
+\lstnewenvironment{showCode}[0]{\lstset{numbers=none}}{} % only shown, not compiled
+
+% will the real phi please stand up
+\renewcommand{\phi}{\varphi}
+
+\pdfinfoomitdate=1
+\pdftrailerid{}
+\pdfsuppressptexinfo15
