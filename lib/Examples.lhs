@@ -171,3 +171,12 @@ Using the Kleene algorithm in Section~\ref{sec:Kleene}, we should be able to tra
 myNDAtoReg :: Regex Letter
 myNDAtoReg = autToReg (decode myNDA, 1)
 \end{code}
+
+Here are also some examples for regular expressions:
+\begin{code}
+exampleRegex :: Regex Letter
+exampleRegex = Star (Alt (L A) (L B))
+
+annoyingRegex :: Regex Letter
+annoyingRegex = Alt Empty (Seq Epsilon (L A))
+\end{code}
