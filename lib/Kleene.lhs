@@ -1,7 +1,7 @@
 
 \section{Automata and Regular Expressions}\label{sec:DetAut}
 
-We previously have defined non/determinisitc automata and regular expressions. 
+We previously have defined non/deterministic automata and regular expressions. 
 Next, perhaps unsurprisingly, since these are well known to be two sides of the same coin, we encode a method to transfer between them.
 \textbf{Possible to do:} and prove these operations are inverses of each other.
 Converting from a regex to a non-deterministic automaton is relatively straightforward, so we begin with that.
