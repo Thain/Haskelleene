@@ -21,9 +21,9 @@ We have tested the following basic facts:
 \begin{itemize}
 \item A basic running example for a deterministic automaton.
 \item The behavioural equivalence of determinisitic and non-deterministic automata under the conversion implemented in Section~\ref{sec:Automata}.
-\item The behavioural equivalence of regular expressions and its corresponding non-deterministic automaton implemented in Section~\ref{sec:DetAut}.
-\item The behavioural equivalence of a deterministic automaton and its corresponding regular expression implemented in Section~\ref{sec:DetAut}.
-\item The behavioural equivalence of a non-deterministic automaton and its corresponding regular expression implemented in Section~\ref{sec:DetAut}.
+\item The behavioural equivalence of regular expressions and its corresponding non-deterministic automaton implemented in Section~\ref{sec:Kleene}.
+\item The behavioural equivalence of a deterministic automaton and its corresponding regular expression implemented in Section~\ref{sec:Kleene}.
+\item The behavioural equivalence of a non-deterministic automaton and its corresponding regular expression implemented in Section~\ref{sec:Kleene}.
 \end{itemize}
 
 \begin{code}

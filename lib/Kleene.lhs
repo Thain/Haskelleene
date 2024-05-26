@@ -106,9 +106,9 @@ We always add a state labeled $1$ for a starting state and $2$ for an accepting 
 Multiplication by prime numbers allows us to ensure that our new automaton \textit{both} preserves the transition function of its component parts \textit{and} has distinct state labels for every state.
 Each input for each operator has a unique prime number assigned to it:
 \begin{enumerate}
-\item Sequence: $13,3$
-\item Alternate: $5,7$
-\item Star: $11$.
+\item \texttt{Seq}: $13,3$
+\item \texttt{Alt}: $5,7$
+\item \texttt{Star}: $11$.
 \end{enumerate}
  
 \begin{code}
@@ -231,7 +231,7 @@ In the following toy example, we apply the algorithim to this automata with inti
 We apply the algorithim to $0$ (the starting state) $1$ (the accepting state) and $2$ (the largest state.) 
 By removing $2$ from the state space (which is what incrementing $k$ does), we get
 \[(a\epsilon^*b)+a\]
-which is exactly the regular expression corresponding to this automata is. Hopefully this very simple example has highlighted the motivation and process behind the algorithim.
+which is exactly what the regular expression corresponding to this automaton is. Hopefully this very simple example has highlighted the motivation and process behind the algorithim.
 
 With this broad motivation, we can know discuss how to implement the algorithm to provide our desired conversion:
 \begin{code}

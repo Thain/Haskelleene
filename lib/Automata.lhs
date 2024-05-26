@@ -240,4 +240,4 @@ fromStartNA nda st = Set.fromList $ epReachable ntrans st
   where ntrans = ndelta nda
 \end{code}
 
-We have tested the behavioural equivalence using the above transitions in Section~\ref{sec:Examples}.
+We have tested the behavioural equivalence using the above transitions in Section~\ref{sec:Testing}.
