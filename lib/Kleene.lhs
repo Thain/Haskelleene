@@ -78,26 +78,15 @@ gluingSeq (aut1, _) (aut2, s2) =  fstAut ++ mid ++ sndAut where
 
 This function takes two automata \texttt{aut1,aut2} and glues them together by adding epsilon transitions between the accepting states of \texttt{aut1} and the starting state of \texttt{aut2}.
 We need to add these epsilon transitions rather than merely identify the starting/ending in order to preserve transitions out of said states.
-For example, if we identify states 1 and 2 in the following example:
-\begin{center}
-\begin{tikzpicture}[scale=0.2]
-\tikzstyle{every node}+=[inner sep=0pt]
-\draw [black] (20.6,-14.6) circle (3);
-\draw (20.6,-14.6) node {$0$};
-\draw [black] (20.6,-14.6) circle (2.4);
-\draw [black] (33.2,-15.3) circle (3);
-\draw (33.2,-15.3) node {$1$};
-\draw [black] (33.2,-15.3) circle (2.4);
-\draw [black] (40.3,-16.5) circle (3);
-\draw (40.3,-16.5) node {$2$};
-\draw [black] (37.4,-31.2) circle (3);
-\draw (37.4,-31.2) node {$4$};
-\draw [black] (22.1,-31.2) circle (3);
-\draw (22.1,-31.2) node {$5$};
-\draw [black] (20.87,-17.59) -- (21.83,-28.21);
-\fill [black] (21.83,-28.21) -- (22.26,-27.37) -- (21.26,-27.46);
-\end{tikzpicture}
-\end{center}
+For example, if we identify states 1 and 2 in the following two automata (blue states being intial, ornage being accepting):
+\\[\begin{tikzcd}[ampersand replacement=\&]
+	\textcolor{rgb,255:red,92;green,92;blue,214}{2} \&\& \textcolor{rgb,255:red,214;green,153;blue,92}{3} \\
+	\textcolor{rgb,255:red,92;green,92;blue,214}{0} \&\& \textcolor{rgb,255:red,214;green,153;blue,92}{1}
+	\arrow["a", from=1-1, to=1-1, loop, in=55, out=125, distance=10mm]
+	\arrow["b", from=1-1, to=1-3]
+	\arrow["a", from=2-1, to=2-3]
+	\arrow["b"', from=2-3, to=2-3, loop, in=305, out=235, distance=10mm]
+\end{tikzcd}\]
 we would change the language from $ab^*a^*b$ to $a(b^*a^*)^*b$. Thus, we add epsilon transitions.
 
 Additionally, we multiply the states in the first automaton by 13 and states in the second automaton by 3.
@@ -208,25 +197,13 @@ As we will see in the following example, this entire process can be though of as
 By removing every state, we are left with a single arrow which corresponds to our desired regular expression.
 
 In the following toy example, we apply the algorithim to this automata with intial state $0$ and accepting state $1$:
-\begin{center}
-\begin{tikzpicture}[scale=0.2]
-\tikzstyle{every node}+=[inner sep=0pt]
-\draw [black] (20.6,-14.6) circle (3);
-\draw (20.6,-14.6) node {$0$};
-\draw [black] (20.6,-14.6) circle (2.4);
-\draw [black] (33.2,-15.3) circle (3);
-\draw (33.2,-15.3) node {$1$};
-\draw [black] (33.2,-15.3) circle (2.4);
-\draw [black] (40.3,-16.5) circle (3);
-\draw (40.3,-16.5) node {$2$};
-\draw [black] (37.4,-31.2) circle (3);
-\draw (37.4,-31.2) node {$4$};
-\draw [black] (22.1,-31.2) circle (3);
-\draw (22.1,-31.2) node {$5$};
-\draw [black] (20.87,-17.59) -- (21.83,-28.21);
-\fill [black] (21.83,-28.21) -- (22.26,-27.37) -- (21.26,-27.46);
-\end{tikzpicture}
-\end{center}
+\[\begin{tikzcd}[ampersand replacement=\&]
+	\& 2 \\
+	\textcolor{rgb,255:red,92;green,92;blue,214}{0} \&\& \textcolor{rgb,255:red,214;green,153;blue,92}{1}
+	\arrow["b", from=1-2, to=2-3]
+	\arrow["a", from=2-1, to=1-2]
+	\arrow["a"', from=2-1, to=2-3]
+\end{tikzcd}\]
 
 We apply the algorithim to $0$ (the starting state) $1$ (the accepting state) and $2$ (the largest state.) 
 By removing $2$ from the state space (which is what incrementing $k$ does), we get
@@ -323,7 +300,9 @@ The most prominent issue with this algoritihm is that it creates very complex re
 We have attempted to implement a few simplification throughout the algorithm, but it still outputs expressions that are horribly over-complex.
 
 For example,
-\[\texttt{autToReg}  \ (\texttt{wikiAutData}, 0) = b+c+((\epsilon+a)(a^*)(b+c))+((b+c+((\epsilon+a)(a^*)(b+c)))(\epsilon+b+((a+c)(a^*)(b+c)))*(\epsilon+b+((a+c)(a^*)(b+c)))) \]
+\being{align*}\texttt{autToReg}  \ (\texttt{wikiAutData}, 0) \\ 
+= \\
+ b+c+((\epsilon+a)(a^*)(b+c))+((b+c+((\epsilon+a)(a^*)(b+c)))(\epsilon+b+((a+c)(a^*)(b+c)))*(\epsilon+b+((a+c)(a^*)(b+c)))) \end{align*}
 which, upon manual reduction, is equivalent to
 \[a^*b\left (a ( a+b)+b \right)^*.\]
 However, reduction of regular expressions is \textsf{NP}-hard, and so we have simply tried to encode a few, computationally quick, simplifications as noted in Section~\ref{sec:Regex}
