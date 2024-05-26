@@ -1,5 +1,9 @@
 \subsection{Regular Expression Library}\label{sec:Regex}
 
+\begin{code}
+module Regex where
+\end{code}
+
 In this section, we will define regular expressions, in the Kleene algebraic sense of the term. It's important to note that this version of regular expressions is different from those that are well known to programmers. For example, the language $\{ a^nba^n | n \in \N \}$ is well known to not be regular, and so not have a regular expression that represents it; meanwhile the programmer's regular expressions can encode this language rather easily.
 
 The following serves as our definition of the \textsf{Regex} type. First we define our base case constructors, \texttt{Empty}, \texttt{Epsilon}, and \texttt{L l}. Note the distinction between \texttt{Empty} and \texttt{Epsilon} type constructors. The former is the regex representing the empty language, that is, the language that has no words in it. The latter represents the empty string, which is the word with no letters, and as a regular expression is the string language containing one string: the empty string.
@@ -7,13 +11,6 @@ The following serves as our definition of the \textsf{Regex} type. First we defi
 Note also that we use a type parameter \texttt{l} for this type. This is so that we can use different input alphabets if we so choose; see the \texttt{Basics} module for the definition of the \texttt{Alphabet} type class.
 
 \begin{code}
-module Regex where
-
-import Data.Maybe ( isNothing )
--- -----------------
--- REGEX definitions 
--- -----------------
-
 data Regex l = Empty | 
                Epsilon |
                L l | 
@@ -61,7 +58,7 @@ It is outside of the scope of this project to implement a proof searcher for thi
 \begin{align*}
 \emptyset + r &= r + \emptyset =  r \\
 \epsilon r &= r \epsilon = r
-\eng{align*}
+\end{align*}
 ...and more. The objective here is not to simplify the regular expression as far as possible, but to implement easy simplifications that improve readability (limiting occurrence of redundancies, and so on).
 \begin{code}
 simplifyRegex :: Eq l => Regex l -> Regex l
@@ -86,14 +83,14 @@ simplifyRegex rx = case rx of
 \end{code}
 Now we need to set to the task of defining a semantics for these regular expressions. That is, given a list of letters from the input alphabet (a word), check whether it belongs to the language represented by the regular expression. First, we will need a utility function for checking if initial sequences of the word satisfy part of the regex, specifically for the \texttt{Sequence} and \texttt{Star} cases.
 
-This function takes a \texttt{Regex} and a word, and produces all splits of the word where the first part of the split satisfies the regex. By splits of a word, we mean splitting the word into two subwords, that when concatenated give the original word. For example splits of $abc$ are:
+This function takes a \texttt{Regex} and a word, and produces all splits of the word where the first part of the split satisfies the regex. By splits of a word, we mean splitting the word into two subwords, that when concatenated give the original word. For example, the splits of $abc$ are:
 \begin{align*}
   &(\epsilon,abc) \\
   &(a,bc) \\
   &(ab,c) \\
   &(abc,\epsilon)
 \end{align*}
-and for this particular input word, with the regex $c^\star a^\star$, \texttt{initCheck} would output $(\epsilon, abc)$ and $(a,bc)$. Note that this function does use \textt{regexAccept}, which we will define below, and that this function does nothing to reduce the "size" of $r$, which means we need to be careful about infinite looping. More on that below.
+and for this particular input word, with the regex $c^\star a^\star$, \texttt{initCheck} would output $(\epsilon, abc)$ and $(a,bc)$. Note that this function does use \texttt{regexAccept}, which we will define below, and that this function does nothing to reduce the "size" of $r$, which means we need to be careful about infinite looping. More on that below.
 \begin{code}
 initCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
 initCheck r w = filter (regexAccept r . fst) $ splits w where
@@ -131,8 +128,8 @@ regexAccept (Seq r r') cs = any (regexAccept r' . snd) $ initCheck r cs
 regexAccept (Star _) [] = True
 -- general star case
 regexAccept (Star r) cs = any (regexAccept (Star r) . snd) $ ignoreEmpty $ initCheck r cs
-  where ignoreEmpty = case regexAccept r [] of
-          True -> init
-          False -> id
+  where ignoreEmpty = if regexAccept r [] then init else id
 \end{code}
-TODO: do some more explaining about star and the cases, and also about runtime.
+In the general case of \texttt{Star}, similar to \texttt{Seq}, we want to find all initial segments of the word that satisfy the regular expression; but now we try to proceed using \texttt{Star r} again. There is an important, subtlety, however: we want to avoid infinite looping, which may happen if our regular expression accepts the empty word.
+
+Take for example the regex $(\epsilon + a)^\star$. This is equivalent to $a^\star$, of course, but introducing these kinds of simplifications to \texttt{simplifyRegex} significantly increases the complexity. If we're not careful, inputting the string $bbb$ with this regex will loop infinitely because our we will continually find that $(\epsilon,bbb)$ satisfies the regex, and will loop back and forth between \texttt{regexAccept} and \texttt{initCheck} without making any forward progress in matching the word. To avoid this, we check if the inner regex accepts $\epsilon$. If it does, we know that it is redundant (because of our case where \texttt{regexAccept (Star r) [] = True}) and so we use \texttt{init} to drop the last accepting initial segment: given our implementation of \texttt{initCheck}, this will necessarily be $(\epsilon,w)$ for whatever input word $w$.
