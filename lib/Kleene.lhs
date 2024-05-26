@@ -21,8 +21,6 @@ We will explain each of these operations more clearly at the appropriate section
 As for any inductive construction we need our base cases, which, for a regular expression are: the Empty expression, the Epislon expression, and a single letter. 
 The simplest NDA which accepts no words is a single node with no accept states, a single node with a single accepting state accepts the empty word, and two nodes connected by a transition function labeled with our letter accepts said single letter.
 
-
-
 \begin{code}
 module Kleene where
 
