@@ -25,16 +25,25 @@ data AutData l s = AD { stateData :: [s]
                       deriving Show
 \end{code}
 
-Here \texttt{l} should be thought of as the type of the chosen alphabet, while \texttt{s} is the type of our states. The type \texttt{TDict} then acts as the type of transition tables. A pair in \texttt{TDict} should be thought of recoding the information of given a current state, what are the possible output states of a given input. The fact that we have used \texttt{Maybe l} is that we want the type \texttt{AutData} to be simultaneously able to record both deterministic and non-deterministic automata, thus with the possibility of $\epsilon$-transitions. For some examples of using \texttt{AutData} to encode automata, see Section~\ref{sec:Examples}.
+Here \texttt{l} should be thought of as the type of the chosen alphabet, while \texttt{s} is the type of our states. The type \texttt{TDict} then acts as the type of transition tables. A pair in \texttt{TDict} should be thought of recoding the information of given a current state, what are the possible output states of a given input. The fact that we have used \texttt{Maybe l} is that we want the type \texttt{AutData} to be simultaneously able to record both deterministic and non-deterministic automata, thus with the possibility of $\epsilon$-transitions. For some examples of using
+ \texttt{AutData} to encode automata, see Section~\ref{subsec:Examples}.
 
-A consequence of using the same data type to possibly encode both a deterministic and non-deterministic automaton is that, we need further conditions to check whether the given data is well-structured to give an output of what we want. The following are some useful utility functions to check whether the given transition table has certain properties:
+As mentioned, the data type of deterministic automata should be defined as follows:
 
 \begin{code}
--- given data in the format of transitionData, an input state, and input
--- letter, output all possible input/output pairs.
+data DetAut  l s = DA { states :: [s]
+                      , accept :: [s]
+                      , delta :: l -> s -> s }
+\end{code}
+
+A consequence of using the same data type (\texttt{AutData}) to encode both deterministic and non-deterministic automata is that we need to check whether the given data properly defines an automaton of either type. The following are some useful utility functions to check whether the given transition table has certain properties:
+
+\begin{code}
+-- given transitionData, an input state, and input letter, output all possible input/output pairs.
 getTrs :: (Eq a, Eq b) => [(a,[(b,a)])] -> a -> b -> [(b,a)]
 getTrs allTrs s0 ltr = filter (\x -> fst x == ltr) $ filter (\x -> fst x == s0) allTrs >>= snd
 
+-- intended to be used as aut `trsOf` s, to see what transitions s has in aut
 trsOf :: Eq s => AutData l s -> s -> [(Maybe l, s)]
 trsOf aut s 
   | isNothing $ lookup s $ transitionData aut = []
@@ -51,15 +60,7 @@ appendTuple :: ([a],[b]) -> ([a],[b]) -> ([a],[b])
 appendTuple (l,l') (m,m') = (l++m,l'++m')
 \end{code}
 
-As mentioned, the data type of deterministic automata should be defined as follows:
-
-\begin{code}
-data DetAut  l s = DA { states :: [s]
-                      , accept :: [s]
-                      , delta :: l -> s -> s }
-\end{code}
-
-To access a deterministic automaton from an element of \texttt{AutData}, we need to verify that the given transition table is indeed deterministic, i.e. for any current state, for any given input alphabet there exists a unique output state:
+We will then use these functions to check if a set of automaton data can properly encode a deterministic automaton. To access a deterministic automaton from an element of \texttt{AutData}, we need to verify that the given transition table is indeed deterministic, i.e. for any current state, for any given input alphabet there exists a unique output state:
 
 \begin{code}
 -- check the totality and functionality of the transition table
@@ -98,7 +99,7 @@ acceptDA :: (Eq s) => DetAut l s -> s -> [l] -> Bool
 acceptDA da s0 w = run da s0 w `elem` accept da
 \end{code}
 
-Completely similarly, we implement non-deterministic automata. The only difference now is that the transition function now also accepts empty input, viz. the socalled \emph{$\epsilon$-transitions}, and the result of a transition function is a list of all possible next states.
+We now proceed to implement non-deterministic automata, in a very similar way. The only difference is that the transition function now also accepts empty input, viz. the socalled \emph{$\epsilon$-transitions}, and the result of a transition function is a list of all possible next states.
 
 \begin{code}
 data NDetAut l s = NA { nstates :: [s]
