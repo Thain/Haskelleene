@@ -1,12 +1,11 @@
-\section{Regular Expression Library}\label{sec:Regex}
+\subsection{Regular Expression Library}\label{sec:Regex}
 
 This is where we define the Kleene regular expression structure we will be using throughout the project.
 
 \begin{code}
 module Regex where
 
-import Basics -- contains all of our utility functions
-import Data.Maybe
+import Data.Maybe ( isNothing )
 -- -----------------
 -- REGEX definitions 
 -- -----------------
@@ -36,6 +35,16 @@ instance Show l => Show (Regex l) where
   show (Star r) = "(" ++ show r ++ ")*"
 -- if sticking with altl, seql, then this isn't quite right. need paren cases
 
+-- splits a list into all possible (order preserving) divisions of it
+-- e.g. [1,2,3] becomes [([],[1,2,3]),([1],[2,3]),([1,2],[3]),([1,2,3],[])]
+splits :: [a] -> [([a],[a])]
+splits [] = [([],[])]
+splits (x:xs) = map (appendFst x) (splits xs) ++ [([],x:xs)]
+
+
+-- append to the front of the first of a pair of lists
+appendFst :: a -> ([a],[b]) -> ([a],[b])
+appendFst x (y,z) = (x:y,z)
 
 -- QoL functions for sequencing or alternating lists of regexes
 seqList :: [Regex l] -> Regex l

@@ -1,8 +1,15 @@
-\begin{thebibliography}{LW13}
+\begin{thebibliography}{Cox07}
 
-\bibitem[LW13]{liuWang2013:agentTypesHLPE}
-Fenrong Liu and Yanjing Wang.
-\newblock Reasoning about agent types and the hardest logic puzzle ever.
-\newblock {\em Minds and Machines}, 23(1):123--161, 2013.
+\bibitem[Cox07]{web}
+Russ Cox.
+\newblock Regular expression matching can be simple and fast (but is slow in
+  java, perl, php, python, ruby, ...).
+\newblock \url{https://swtch.com/~rsc/regexp/regexp1.html}, 2007.
+
+\bibitem[Fio10]{book_marcelo}
+Marcelo Fiore.
+\newblock {\em Lecture Notes on Regular Languages and Finite Automata}.
+\newblock Accessible at
+  \url{https://www.cl.cam.ac.uk/teaching/1011/RLFA/LectureNotes.pdf}, 2010.
 
 \end{thebibliography}

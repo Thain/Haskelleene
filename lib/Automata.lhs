@@ -1,27 +1,63 @@
 
-\section{Automata Library}\label{sec:Automata}
+\subsection{Automata}\label{sec:Automata}
 
-This is where we define the automaton types, both deterministic and non, that we will be using throughout the project.
+Our first major goal is to implement (non)deterministic automata. Recall that an automaton with input alphabet $\Sigma$ consists of a set of states, a subset of accepting states, and a transition function $\delta$. As input, $\delta$ takes a symbol of the alphabet, and a current state of the automaton. For a deterministic automaton, it outputs a unique next state; For a non-deterministic automaton, it outputs a \emph{list} of possible next states.
 
 \begin{code}
 {-# LANGUAGE TupleSections #-}
 
 module Automata where
 
-import Basics -- contains all of our utility functions
-import Data.Maybe
-import Data.List
+import Basics ( Alphabet(..), alphIter ) -- contains all of our utility functions
+import Data.Maybe ( isJust, fromJust )
+import Data.List ( nub )
 import qualified Data.Set as Set
+\end{code}
 
--- ----------------------
--- DETERMINISTIC AUTOMATA
--- ----------------------
+However, since $\delta$ of an automaton is a \emph{function}, it is not directly definable as inputs. Our implementation choice is to record the \emph{transition table} of the transition function, and use the following types as an interface of encoding and decoding an automata with finite inputs:
 
+\begin{code}
+type TDict l s = [(s, [(Maybe l, s)])]
+
+data AutData l s = AD { stateData :: [s] 
+                      , acceptData :: [s] 
+                      , transitionData :: TDict l s }
+                      deriving Show
+\end{code}
+
+Here \texttt{l} should be thought of as the type of the chosen alphabet, while \texttt{s} is the type of our states. The type \texttt{TDict} then acts as the type of transition tables. A pair in \texttt{TDict} should be thought of recoding the information of given a current state, what are the possible output states of a given input. The fact that we have used \texttt{Maybe l} is that we want the type \texttt{AutData} to be simultaneously able to record both deterministic and non-deterministic automata, thus with the possibility of $\epsilon$-transitions. For some examples of using \texttt{AutData} to encode automata, see Section~\ref{sec:Examples}.
+
+A consequence of using the same data type to possibly encode both a deterministic and non-deterministic automaton is that, we need further conditions to check whether the given data is well-structured to give an output of what we want. The following are some useful utility functions to check whether the given transition table has certain properties:
+
+\begin{code}
+-- given data in the format of transitionData, an input state, and input
+-- letter, output all possible input/output pairs.
+getTrs :: (Eq a, Eq b) => [(a,[(b,a)])] -> a -> b -> [(b,a)]
+getTrs allTrs s0 ltr = filter (\x -> fst x == ltr) $ filter (\x -> fst x == s0) allTrs >>= snd
+
+-- utility for checking if a list has duplicates
+allUnq:: Eq a => [a] -> Bool
+allUnq = unqHelp []
+    where
+        unqHelp _ [] = True
+        unqHelp seen (x:xs) = notElem x seen && unqHelp (x:seen) xs
+
+appendTuple :: ([a],[b]) -> ([a],[b]) -> ([a],[b])
+appendTuple (l,l') (m,m') = (l++m,l'++m')
+\end{code}
+
+As mentioned, the data type of deterministic automata should be defined as follows:
+
+\begin{code}
 data DetAut  l s = DA { states :: [s]
                       , accept :: [s]
                       , delta :: l -> s -> s }
+\end{code}
 
--- can the data define a det automaton? (totality of transition)
+To access a deterministic automaton from an element of \texttt{AutData}, we need to verify that the given transition table is indeed deterministic, i.e. for any current state, for any given input alphabet there exists a unique output state:
+
+\begin{code}
+-- check the totality and functionality of the transition table
 detCheck :: (Alphabet l, Eq s) => AutData l s -> Bool
 detCheck ad = length sts == length (stateData ad) && allUnq sts 
               -- all states are in transitionData exactly once
@@ -43,7 +79,11 @@ encodeDA d | not $ detCheck d = Nothing
                                    , accept = acceptData d
                                    , delta = safeDelta } where
                safeDelta ltr st = fromJust $ lookup (Just ltr) $ fromJust (lookup st (transitionData d)) 
+\end{code}
 
+We end the basic implementation of deterministic automata by providing its semantic layer, i.e. on a given input and an initial state, whether a deterministic automata accept a list of symbols or not. Intuitively, the \texttt{run} function uses the transition function to trasverses an input string on an automaton and output the terminating state. Then \texttt{acceptDA} tests whether the input is accepted by testing whether the terminating state is an accepted state:
+
+\begin{code}
 -- takes DA, input letter list, and initial state to output pair
 run :: DetAut l s -> s -> [l] -> s
 run _ s0 [] = s0
@@ -51,15 +91,19 @@ run da s0 (w:ws) = run da (delta da w s0) ws
 
 acceptDA :: (Eq s) => DetAut l s -> s -> [l] -> Bool
 acceptDA da s0 w = run da s0 w `elem` accept da
+\end{code}
 
--- ----------------------
--- NON-DETERMINISTIC AUTOMATA
--- ----------------------
+Completely similarly, we implement non-deterministic automata. The only difference now is that the transition function now also accepts empty input, viz. the socalled \emph{$\epsilon$-transitions}, and the result of a transition function is a list of all possible next states.
 
+\begin{code}
 data NDetAut l s = NA { nstates :: [s]
                       , naccept :: [s]
                       , ndelta :: Maybe l -> s -> [s] }
+\end{code}
 
+Completely similarly, we can encode a non-determinisitic automaton from an element of \texttt{AutData}: {\color{red} Maybe say more.}
+
+\begin{code}
 -- make data into an NA (if data formatted properly, go ahead; otherwise, format it then encode)
 encodeNA :: (Alphabet l, Eq s) => AutData l s -> NDetAut l s
 encodeNA d = NA { nstates = stateData d
@@ -100,7 +144,11 @@ decode nda = AD { stateData = sts
         trandata = graph help sts 
         help st = concatMap (\sym -> (sym,) <$> ntrans sym st) symlist
         graph f as = zip as $ f <$> as
+\end{code}
 
+We end with the semantic layer for non-determinisitic automata. The algorithm used for implementing \texttt{runNA} for trasversing an input string on a non-deterministic automaton is inspired by~\cite{web}. Intuitively, we record a list of \emph{active states} at each step of the trasversal, with its corresponding remaining list of inputs. If there are no possible transition states with the given input, we terminiate and record it in the output. The function \texttt{ndautAccept} then checks whether there is an output that consumes all the inputs, and terminiates at an accepting state.
+
+\begin{code}
 runNA :: (Alphabet l, Ord s) => NDetAut l s  -> s -> [l] -> [([l], s)]
 runNA na st input = 
   case input of
@@ -118,11 +166,11 @@ ndautAccept na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $
 
 ndfinalStates :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> [s]
 ndfinalStates na s0 w = snd <$> runNA na s0 w
+\end{code}
 
--- ---------------------------
--- CONVERTING BETWEEN AUTOMATA
--- ---------------------------
+Finally, we implement an algorithm that exhibits the behavioural equivalence between deterministic and non-deterministic automata. The easy direction is that, evidently, any deterministic automaton is also a non-deterministic one, and they evidently accepts the same language:
 
+\begin{code}
 -- The trivial forgetful functor: DA -> NA
 fromDA :: (Alphabet l) => DetAut l s -> NDetAut l s
 fromDA da = NA { nstates = states da
@@ -130,8 +178,11 @@ fromDA da = NA { nstates = states da
                , ndelta = newDelta } where
   newDelta Nothing _ = []
   newDelta (Just l) st = [delta da l st]
+\end{code}
 
+The non-trivial direction is that any non-deterministic automaton can also be converted into a deterministic one, with possibly different set of states and transition functions. The general idea is simple: We change the set of states to the set of \emph{subset} of the original non-determinisitic automaton. This way, we may code the non-deterministic behaviour in a deterministic way. The algorithm is inspired by~\cite{book_marcelo}.
 
+\begin{code}
 -- The Power-set Construction: NA -> DA 
 fromNA :: (Alphabet l, Ord s) => NDetAut l s -> DetAut l (Set.Set s)
 fromNA nda = DA { states = Set.toList dasts
@@ -159,5 +210,6 @@ fromTransNA ntrans sym set = result
 fromStartNA :: (Alphabet l, Ord s) => NDetAut l s -> s -> Set.Set s
 fromStartNA nda st = Set.fromList $ epReachable ntrans st
   where ntrans = ndelta nda
-
 \end{code}
+
+We have tested the behavioural equivalence using the above transition in Section~\ref{sec:Examples}.

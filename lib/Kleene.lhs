@@ -164,7 +164,8 @@ By connecting the beginning and ending of our starting automaton we create an ab
 Now that we have defined each construction, we provide a brief proof of the following lemma:
 
 \begin{lemma}
-Each regular expression $r$ gives rise to (at least one) non-deterministic automata, $D,$ such that\[L(r) = L(D).\]
+  Each regular expression $r$ gives rise to (at least one) non-deterministic automata, $D,$ such that
+  \[L(r) = L(D).\]
 \end{lemma}
 
 \begin{proof}

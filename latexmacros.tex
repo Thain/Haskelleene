@@ -1,6 +1,7 @@
 \usepackage{etex,datetime,setspace,latexsym,amssymb,amsmath,amsthm}
 \usepackage{fancybox,dialogue,float,wrapfig,enumerate,microtype}
 \usepackage{verbatim,xcolor,multicol,titlesec,tabularx,mdframed}
+\usepackage{tikz-cd,quiver}
 
 \usepackage[utf8]{inputenc}
 \usepackage[pdftex]{hyperref}
@@ -12,7 +13,11 @@
 \usetikzlibrary{arrows,trees,positioning,shapes,patterns}
 \usetikzlibrary{intersections,calc,fpu,decorations.pathreplacing}
 
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+
 \usepackage[T1]{fontenc} % better fonts
+
 
 % Haskell code listings in our own style
 \usepackage{listings,color}
@@ -34,8 +39,8 @@
   tabsize         = 8,                  breaklines      = true,
   xleftmargin     = 8pt,                xrightmargin    = 8pt,
   frame           = single,             stepnumber      = 1,
-  aboveskip       = 2pt plus 1pt,
-  belowskip       = 8pt plus 3pt
+  aboveskip       = 10pt plus 3pt,
+  belowskip       = 1pt plus 1pt
 }
 \lstnewenvironment{code}[0]{}{}
 \lstnewenvironment{showCode}[0]{\lstset{numbers=none}}{} % only shown, not compiled
