@@ -4,19 +4,19 @@
 We previously have defined non/determinisitc automata and regular expressions. 
 Next, perhaps unsuprisingly, since these are well known to be two sides of the same coin, we encode a method to transfer between them.
 \textbf{Possible to do:} and prove these operations are inverses of each other.
-Converting froma regex to a non-deterministic automata is relatively straightforward, so we begin with that.
-Second, we describe Kleene's Algorithim (a variation of the Floyd-Warshall Algorithim) in order to transform an automata into a regex.
+Converting froma regex to a non-deterministic automaton is relatively straightforward, so we begin with that.
+Second, we describe Kleene's Algorithim (a variation of the Floyd-Warshall Algorithim) in order to transform an automaton into a regex.
 Finally, we note general problems with the above two steps as well as possible future methods to improve them.
 
 \subsection{Regular Expressions to Automata}
 
-Converting a regular expression into a non-dterminsitic automata is both straightforward and (mostly) intuitive. 
+Converting a regular expression into a non-dterminsitic automaton is both straightforward and (mostly) intuitive. 
 We have defined a regular expression using an inductive constructor, similar to propositional logic. 
-This inductive construction readily allows us to recursive construct this an automata - with one general construction per regex operator.
+This inductive construction readily allows us to recursive construct this an automaton - with one general construction per regex operator.
 At a high level we can think of our algorithim as follows: first, the transition labels correspond to our alphabet; 
-second, generate a very simple automata for each atom (letter, epsilon, or empty string); 
+second, generate a very simple automaton for each atom (letter, epsilon, or empty string); 
 then attach these automata together in a well-behaved way for each operator. 
-Roughly, sequence corresponds to placing each automata one after the other, alternate to placing them in parralel, and star to folding the automata into a circle. 
+Roughly, sequence corresponds to placing each automaton one after the other, alternate to placing them in parralel, and star to folding the automaton into a circle. 
 We will explain each of these operations more clearly at the appropriate section.
 As for any inductive construction we need our base cases, which, for a regular expression are: the Empty expression, the Epislon expression, and a single letter. 
 The simplest NDA which accepts no words is a single node with no accept states, a single node with a single accepting state accepts the empty word, and two nodes connected by a transition function labeled with our letter accepts said single letter.
@@ -94,9 +94,9 @@ transForState aut s
 
 This functoion takes two automata $aut1,aut2$ and glues them together by adding epsilon transitions between the accepting states of $aut1$ and the starting state of $aut2.$
 We need to add these epsilon transitions rather than merely identify the starting/ending in order to preserve tranitions out of said states.
-For example, if we glued the start/accepting states together in the following automata DIAGRAM
+For example, if we glued the start/accepting states together in the following automaton DIAGRAM
 we would accept abaa, where FINISH EXAMPLE.
-Additionally, we multiply the states in the first automata by 13 and states in the second automata by 3.
+Additionally, we multiply the states in the first automaton by 13 and states in the second automaton by 3.
 In the gluing and star operator we have to add new states (in order to prevent the gluing issue above). 
 We always add a state labeled $1$ for a starting state and $2$ for an accepting state.
 Multiplication by prime numbers allows us to ensure that our new automaton \textit{both} preserves the transition function of its component parts \textit{and} had distinct state labels for every state.
@@ -164,7 +164,7 @@ By connecting the beginning and ending of our starting automaton we create an ab
 Now that we have defined each construction, we provide a brief proof of the following lemma:
 
 \begin{lemma}
-  Each regular expression $r$ gives rise to (at least one) non-deterministic automata, $D,$ such that
+  Each regular expression $r$ gives rise to (at least one) non-deterministic automaton, $D,$ such that
   \[L(r) = L(D).\]
 \end{lemma}
 
@@ -177,23 +177,23 @@ We believe the base cases are clear from construction and so move one
 
 \end{proof}
 
-This construction was relatively straightforward since by looking at what each operator in a regular expression means an automata immediately suggests itself.
+This construction was relatively straightforward since by looking at what each operator in a regular expression means an automaton immediately suggests itself.
 The next algorithim, moving from automata to regular expressions, is far less intuitive, and encounters difficulties we will note in the final section.
 This complexity is due to the non-inductive/recurisve definition of automata as opposed to regex.
 
 \subsection{Automata to Regular}
 
-Here, we implement which take a non/determinisitc automata, a starting state, and ouputs a corresponding regular expression.
-The algorithim we use, called Kleene's Algorithim, allows us to impose a semi-recusrive structure on an automata which in turn allows us to extract a regular expression.
+Here, we implement which take a non/determinisitc automaton, a starting state, and ouputs a corresponding regular expression.
+The algorithim we use, called Kleene's Algorithim, allows us to impose a semi-recusrive structure on an automaton which in turn allows us to extract a regular expression.
 First, we provide the implement of Kleene's Algorithim (as well as some motivation and examples) before explaining how Kleene's Algorithim can provide us with our desired conversion.
 We conclude with a brief overview of the helper functions we enlist throughout our implementation as well as a slightly different conversion (and why we opted with our method.)
 
 \subsubsection{Kleene's Algorithim}
 
 Below, you will find our implementation of Kleene's Algorithim;
-it take an automata (whose states are labelled $[0 . . n]$ exactly), and three integer $i,j,k$ (which correspond to states) and 
+it take an automaton (whose states are labelled $[0 . . n]$ exactly), and three integer $i,j,k$ (which correspond to states) and 
 outputs a regular expression corresponding to the set of all paths from state $i$ to state $j$ without passing through states higher than $k$.
-This is a rather strong structural requirement, but it allows us to define the algorithim recurivsely and - as we will show later in the report - it is easy to convert any automata into one with the correct state labels.
+This is a rather strong structural requirement, but it allows us to define the algorithim recurivsely and - as we will show later in the report - it is easy to convert any automaton into one with the correct state labels.
 
 \begin{code}
 kleeneAlgo:: Eq l => AutData l Int -> Int -> Int -> Int -> Regex l
@@ -210,10 +210,10 @@ kleeneAlgo aut i j k =
 Let us quickly dig in what this code actually means before moving onto an example.
 The algoritihim succsessively removes states by incrementing $k$ downwards.
 At each step we remove the highest state and nicely add its associate transition labels to the remaining states.
-If our regex to automata algoritihm worked by building up an automata to follow a regular expression, Kleene's Algorithm works by pulling a fully glued automata apart step by step.
+If our regex to automata algoritihm worked by building up an automaton to follow a regular expression, Kleene's Algorithm works by pulling a fully glued automaton apart step by step.
 When $k=-1$, we want to return a regex corresponding to the set of paths from $i$ directly to $j$ without stopping at any either state along the way.
 This is simply the set of transition labels which connect $i$ to $j$ (alongside Epsilon if $i=j$.)
-However, if $k>-1$, we need to remove the $k$'th state and shift the transition functions into and out of $k$ amidst the rest of the automata.
+However, if $k>-1$, we need to remove the $k$'th state and shift the transition functions into and out of $k$ amidst the rest of the automaton.
 First, we don't touch any of the paths which avoid $k$ by including $kleeneAlgo aut i j (k-1).$
 The remaining sequence can be viewed as: take any path to you want to $k$ but stop \textit{as soon as} you reach $k$ for the first time;
 then, take any path from $k$ to $k$ as many times as you want (we need the Star here because this algorithim does not normally permit loops);
@@ -242,7 +242,7 @@ autToReg (aut, s)= altList [kleeneAlgo intAut firstState a lastState | a <- acce
 --following the Wikipedia page, this function recursively removes elements and uses the removed transition lables to construct the regex. 
 
 \end{code}
-This takes an automata (and a starting state), transforms that automata into one with the appropriate state labels and then applies the algorithim on the intial state and every accepting state.
+This takes an automaton (and a starting state), transforms that automaton into one with the appropriate state labels and then applies the algorithim on the intial state and every accepting state.
 For a given accepting state $a$, (kleeneAlgo aut firstState $a$ lastState) provides a regular expression corresponding to the paths from the intial state to $a$ with no restrictions - we have set $k$ to be higher than every state label.
 This is exactly what we were looking for, given our previous understanding of the algoritihim itself.
 
@@ -269,7 +269,7 @@ relabelAut (aut, s1) = (AD [relabelHelp aut s | s <- stateData aut]
                        , relabelHelp aut s1)
 
 \end{code}
-As mentioned, we need to convert an arbitrary automata to one with well-behaved state labels in order to define Kleene's Algorithim. 
+As mentioned, we need to convert an arbitrary automaton to one with well-behaved state labels in order to define Kleene's Algorithim. 
 These functions do so handily via the use of a dictionary.
 \begin{code}
 -- take aut data and make a nice start state/end state
@@ -293,7 +293,7 @@ While this construction is more general, it adds several more transitions which 
 More on this issue in the following section.
 \begin{code}
 -- Another implementation of Automata to Reg
--- We assume the automata is deterministic 
+-- We assume the automaton is deterministic 
 
 dautToReg :: (Alphabet l, Ord s) => DetAut l s -> s -> Regex l 
 dautToReg daut s = simplifyRegex $ foldr (Alt . dautToRegSub daut s (states daut)) Empty $ accept daut
