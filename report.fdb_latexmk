@@ -1,14 +1,28 @@
 # Fdb version 3
+<<<<<<< Updated upstream
 ["bibtex report"] 1715339138 "report.aux" "report.bbl" "report" 1715340339
   "/usr/local/texlive/2020/texmf-dist/bibtex/bst/base/alpha.bst" 1292289607 23907 a5f93555796fb564b924339521f10a7c ""
   "references.bib" 1715337426 580 3cd3758306bc52ee85ae04232ece9d36 ""
   "report.aux" 1715340339 1752 45126d567c67d0937badaff4677e04b6 "pdflatex"
+=======
+["bibtex report"] 1716731721 "report.aux" "report.bbl" "report" 1716731795
+  "/usr/local/texlive/2020/texmf-dist/bibtex/bst/base/alpha.bst" 1292289607 23907 a5f93555796fb564b924339521f10a7c ""
+  "references.bib" 1716717930 1051 8a10acb05cb965bbb4f236de02f6d7bc ""
+  "report.aux" 1716731784 3291 4d2f459eef6e1c592992ef55598c7cad "pdflatex"
+>>>>>>> Stashed changes
   (generated)
   "report.blg"
+<<<<<<< Updated upstream
   "report.bbl"
 ["pdflatex"] 1715340337 "/Users/xielingyuan/Documents/github/Haskelleene/report.tex" "/Users/xielingyuan/Documents/github/Haskelleene/report.pdf" "report" 1715340339
   "/Users/xielingyuan/Documents/github/Haskelleene/report.aux" 1715340339 1752 45126d567c67d0937badaff4677e04b6 ""
   "/Users/xielingyuan/Documents/github/Haskelleene/report.tex" 1715337426 887 3028f1b5deb1947daa2b6786175e4ef5 ""
+=======
+["pdflatex"] 1716731781 "/Users/xielingyuan/Documents/github/Haskelleene/report.tex" "/Users/xielingyuan/Documents/github/Haskelleene/report.pdf" "report" 1716731795
+  "/Users/xielingyuan/Documents/github/Haskelleene/report.aux" 1716731784 3291 4d2f459eef6e1c592992ef55598c7cad ""
+  "/Users/xielingyuan/Documents/github/Haskelleene/report.tex" 1716730055 1114 81aa5fe535fc4d890ea3348d1ef58cea ""
+  "/Users/xielingyuan/Library/texmf/tex/latex/quiver/quiver.sty" 1639108544 1606 0a56787eafe2108d7ab3bda12c3165bc ""
+>>>>>>> Stashed changes
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -22,7 +36,11 @@
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/ecrm1440.tfm" 1136768653 3584 3169d30142b88a27d4ab0e3468e963a2 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/ecrm1728.tfm" 1136768653 3584 3c76ccb63eda935a68ba65ba9da29f1a ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/ecrm2074.tfm" 1136768653 3584 8e2870ec7aa9776f59654942b0923f51 ""
+<<<<<<< Updated upstream
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/ecti1095.tfm" 1136768653 3072 b73d2778cc3af44970de4de5e032d7f6 ""
+=======
+  "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/ecss1200.tfm" 1136768653 3584 db562fb1d1c474cc55f0ce8a1dd94fe7 ""
+>>>>>>> Stashed changes
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/ecti1200.tfm" 1136768653 3072 8b5a64dc91775463bc95e2d818524028 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/ectt0800.tfm" 1136768653 1536 0b0b8ca286de6a006b681926403f35cd ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/ectt1200.tfm" 1136768653 1536 487c9b46984a816c7ed238d0674595c7 ""
@@ -47,6 +65,16 @@
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/latex-fonts/lasy6.tfm" 1136768653 520 4889cce2180234b97cad636b6039c722 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/latex-fonts/lasy7.tfm" 1136768653 520 a74c6ed8cb48679fdc3ea874d9d34a7e ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/latex-fonts/lasy8.tfm" 1136768653 520 7bb3abb160b19e0ed6ac404bb59052b7 ""
+<<<<<<< Updated upstream
+=======
+  "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb" 1248133631 36741 fa121aac0049305630cf160b86157ee4 ""
+  "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb" 1248133631 35469 70d41d2b9ea31d5d813066df7c99281c ""
+  "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb" 1248133631 32722 d7379af29a190c3f453aba36302ff5a9 ""
+  "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1248133631 32569 5e5ddc8df908dea60932f3c484a54c0d ""
+  "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb" 1248133631 32587 1788b0c1c5b39540c96f5e42ccd6dae8 ""
+  "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb" 1248133631 32626 4f5c1b83753b1dd3a97d1b399a005b4b ""
+  "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb" 1248133631 34694 ad62b13721ee8eda1dcc8993c8bd7041 ""
+>>>>>>> Stashed changes
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb" 1215737283 154600 ea54091d31de803b613ba9e80ca51709 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb" 1215737283 140176 d4962f948b4cc0adf4d3dde77a128c95 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb" 1215737283 139826 9213617a7cb78635fc326b859c0b2273 ""
@@ -55,7 +83,11 @@
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb" 1215737283 136101 f533469f523533d38317ab5729d00c8a ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb" 1215737283 131078 d96015a2fa5c350129e933ca070b2484 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb" 1215737283 131290 ea265c7de37664eae04a6f91a1f7a51f ""
+<<<<<<< Updated upstream
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb" 1215737283 196446 8fbbe4b97b83e5182def6d29a44e57fb ""
+=======
+  "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sfss1200.pfb" 1215737283 95792 fb800ffa2babe7bd5fafc1817d8f1313 ""
+>>>>>>> Stashed changes
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb" 1215737283 198221 ca5aa71411090ef358a6cc78b7458365 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sftt0800.pfb" 1215737283 175641 e30a691dc1402b08fd6535cf8a31e5b7 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb" 1215737283 167085 68de377d2744a68a88fa40a1f610615a ""
@@ -176,6 +208,7 @@
   "/usr/local/texlive/2020/texmf-dist/tex/latex/base/inputenc.sty" 1580683321 5050 8933a39ad74377accd18991c5eb90c58 ""
   "/usr/local/texlive/2020/texmf-dist/tex/latex/base/latexsym.sty" 1580683321 2854 12555a1cadee722c56d2816ab5a895f5 ""
   "/usr/local/texlive/2020/texmf-dist/tex/latex/base/size12.clo" 1580683321 8447 5c4b8ee712f8e349df2722115bc8c513 ""
+  "/usr/local/texlive/2020/texmf-dist/tex/latex/base/t1cmss.fd" 1580683321 2622 2e7b4cea91736cafdafba1c0db58bc1c ""
   "/usr/local/texlive/2020/texmf-dist/tex/latex/base/t1cmtt.fd" 1580683321 2444 92c1f2a3fb5fbd5ac60f99eac55c9b29 ""
   "/usr/local/texlive/2020/texmf-dist/tex/latex/base/ulasy.fd" 1580683321 2234 46373e8269e9960c9a311c7c046a0877 ""
   "/usr/local/texlive/2020/texmf-dist/tex/latex/datetime/datetime-defaults.sty" 1427500626 4105 4c80eaed8cd4f9a80cc6244c0adeb81f ""
@@ -256,6 +289,7 @@
   "/usr/local/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1586288239 4811913 0be9a7e86c70a26e5e3042966bcd7097 ""
   "/usr/local/texlive/2020/texmf-var/web2c/pdftex/pdflatex.fmt" 1586288259 2432462 fd0fa20e9a3cb5f8169fd0ba1c955158 ""
   "/usr/local/texlive/2020/texmf.cnf" 1586288231 577 d60164b4589a341208aff7a667fbbdcb ""
+<<<<<<< Updated upstream
   "Conclusion.tex" 1715337426 121 d82601d74ce8f7d1fc8e9b986ebb95fc ""
   "Howto.tex" 1715339192 705 6fb60e2bff1dc9957f768f3feab1d583 ""
   "exec/Main.lhs" 1715339139 344 b85e3354eef14b58001cea60aa3f633d ""
@@ -275,3 +309,26 @@
   "report.out"
   "report.pdf"
   "/Users/xielingyuan/Documents/github/Haskelleene/report.pdf"
+=======
+  "Conclusion.tex" 1716709800 123 8b58ac4a6e1afe210ea4bbc79119bfe4 ""
+  "latexmacros.tex" 1716731648 2464 8868011783cb9639bf40053b74b1f717 ""
+  "lib/Automata.lhs" 1716728319 11488 4b3a8ac2e35534a731932e91aec0aed3 ""
+  "lib/Basics.lhs" 1716729107 1634 2a89a4c3c442d133b8ee7a0768d913ba ""
+  "lib/Examples.lhs" 1716730539 4635 e98cfd25b497f3137a12eb779eccf951 ""
+  "lib/Kleene.lhs" 1716729702 19091 c9120907660b1dc0db1771c9c178e230 ""
+  "lib/Regex.lhs" 1716731715 8775 b6a2a9a3aaa6fd0c29b1170fd4154cf6 ""
+  "report.aux" 1716731784 3291 4d2f459eef6e1c592992ef55598c7cad "pdflatex"
+  "report.bbl" 1716731721 486 8cc091a573fe30f4bdf76c7199c73cbe "bibtex report"
+  "report.out" 1716731784 944 9dbc62efe57b4b3be2dcda126e4ee4a6 "pdflatex"
+  "report.tex" 1716730055 1114 81aa5fe535fc4d890ea3348d1ef58cea ""
+  "report.toc" 1716731784 1192 c28a516a075b7ba3100ebb0bfc0f1234 "pdflatex"
+  "test/simpletests.lhs" 1716731795 3928 6584b630024f79a672ee23683edea6c6 ""
+  (generated)
+  "report.out"
+  "/Users/xielingyuan/Documents/github/Haskelleene/report.log"
+  "report.toc"
+  "report.pdf"
+  "/Users/xielingyuan/Documents/github/Haskelleene/report.pdf"
+  "report.aux"
+  "report.log"
+>>>>>>> Stashed changes
