@@ -8,7 +8,7 @@ In this section, we will define regular expressions, in the Kleene algebraic sen
 
 The following serves as our definition of the \textsf{Regex} type. First we define our base case constructors, \texttt{Empty}, \texttt{Epsilon}, and \texttt{L l}. Note the distinction between \texttt{Empty} and \texttt{Epsilon} type constructors. The former is the regex representing the empty language, that is, the language that has no words in it. The latter represents the empty string, which is the word with no letters, and as a regular expression is the string language containing one string: the empty string.
 
-Note also that we use a type parameter \texttt{l} for this type. This is so that we can use different input alphabets if we so choose; see the \texttt{Basics} module for the definition of the \texttt{Alphabet} type class.
+Note also that we use a type parameter \texttt{l} for this type. This is so that we can use different input alphabets if we so choose; see the \texttt{Basics} module for the definition of the \texttt{Alphabet} type class in Section~\ref{subsec:alphabet}.
 
 \begin{code}
 data Regex l = Empty | 
@@ -22,14 +22,16 @@ data Regex l = Empty |
 We also write a robust \texttt{Show} instance for \texttt{Regex}, with many hard coded cases so as to mimic the conventions of writing regular expressions as we can. We then also include some quality-of-life functions, for example for sequencing or alternating a list of regexes, as well as doing so for some list of input letters. This allows us to turn a word into a regex representing exactly that word quickly and easily.
 \begin{code}
 instance Show l => Show (Regex l) where
-  show Empty = "∅"
-  show Epsilon = "ɛ"
+  show Empty = "em"
+  show Epsilon = "ep"
   show (L a) = show a
-  show (Alt (Seq r r') (Seq r'' r''')) = "(" ++ show (Seq r r') ++ ")+(" ++ show (Seq r'' r''') ++ ")"
+  show (Alt (Seq r r') (Seq r'' r''')) = "(" ++ show (Seq r r') ++ ")+("
+                                             ++ show (Seq r'' r''') ++ ")"
   show (Alt (Seq r r') r'') = "(" ++ show (Seq r r') ++ ")" ++ "+" ++ show r''
   show (Alt r'' (Seq r r')) = show r'' ++ "+" ++ "(" ++ show (Seq r r') ++ ")"
   show (Alt r r') = show r ++ "+" ++ show r'
-  show (Seq (Alt r r') (Alt r'' r''')) = "(" ++ show (Alt r r') ++ ")(" ++ show (Alt r'' r''') ++ ")"
+  show (Seq (Alt r r') (Alt r'' r''')) = "(" ++ show (Alt r r') ++ ")(" 
+                                             ++ show (Alt r'' r''') ++ ")"
   show (Seq (Alt r r') r'') = "(" ++ show (Alt r r') ++ ")" ++ show r''
   show (Seq r'' (Alt r r')) = show r'' ++ "(" ++ show (Alt r r') ++ ")"
   show (Seq r r') = show r ++ show r'
@@ -62,35 +64,32 @@ It is outside of the scope of this project to implement a proof searcher for thi
 ...and more. The objective here is not to simplify the regular expression as far as possible, but to implement easy simplifications that improve readability (limiting occurrence of redundancies, and so on).
 \begin{code}
 simplifyRegex :: Eq l => Regex l -> Regex l
-simplifyRegex rx = case rx of
-                    Alt r4 (Seq r1 (Seq (Star r2) r3)) | r1 == r2 && r3 == r4 -> Seq (Star (simplifyRegex r1)) (simplifyRegex r4)
-                    (Alt Empty r) -> simplifyRegex r
-                    (Alt r Empty) -> simplifyRegex r
-                    (Alt r r') | r == r' -> simplifyRegex r
-                    (Seq r Epsilon) -> simplifyRegex r
-                    (Seq Epsilon r) -> simplifyRegex r
-                    (Seq _ Empty) -> Empty
-                    (Seq Empty _) -> Empty
-                    (Star Empty) -> Empty
-                    (Star Epsilon) -> Epsilon
-                    (Star (Star r)) -> simplifyRegex $ Star r
-                    (Star (Alt r Epsilon)) -> simplifyRegex $ Star r
-                    (Star (Alt Epsilon r)) -> simplifyRegex $ Star r
-                    Alt r r' -> Alt (simplifyRegex r) (simplifyRegex r')
-                    Seq r r' -> Seq (simplifyRegex r) (simplifyRegex r')
-                    Star r -> Star (simplifyRegex r)
-                    x -> x
+simplifyRegex rx = 
+  case rx of
+    Alt r4 (Seq r1 (Seq (Star r2) r3)) 
+      | r1 == r2 && r3 == r4 -> Seq (Star (simplifyRegex r1)) (simplifyRegex r4)
+    (Alt Empty r) -> simplifyRegex r
+    (Alt r Empty) -> simplifyRegex r
+    (Alt r r') | r == r' -> simplifyRegex r
+    (Seq r Epsilon) -> simplifyRegex r
+    (Seq Epsilon r) -> simplifyRegex r
+    (Seq _ Empty) -> Empty
+    (Seq Empty _) -> Empty
+    (Star Empty) -> Empty
+    (Star Epsilon) -> Epsilon
+    (Star (Star r)) -> simplifyRegex $ Star r
+    (Star (Alt r Epsilon)) -> simplifyRegex $ Star r
+    (Star (Alt Epsilon r)) -> simplifyRegex $ Star r
+    Alt r r' -> Alt (simplifyRegex r) (simplifyRegex r')
+    Seq r r' -> Seq (simplifyRegex r) (simplifyRegex r')
+    Star r -> Star (simplifyRegex r)
+    x -> x
 \end{code}
 Now we need to set to the task of defining a semantics for these regular expressions. That is, given a list of letters from the input alphabet (a word), check whether it belongs to the language represented by the regular expression. First, we will need a utility function for checking if initial sequences of the word satisfy part of the regex, specifically for the \texttt{Sequence} and \texttt{Star} cases.
 
-This function takes a \texttt{Regex} and a word, and produces all splits of the word where the first part of the split satisfies the regex. By splits of a word, we mean splitting the word into two subwords, that when concatenated give the original word. For example, the splits of $abc$ are:
-\begin{align*}
-  &(\epsilon,abc) \\
-  &(a,bc) \\
-  &(ab,c) \\
-  &(abc,\epsilon)
-\end{align*}
-and for this particular input word, with the regex $c^\star a^\star$, \texttt{initCheck} would output $(\epsilon, abc)$ and $(a,bc)$. Note that this function does use \texttt{regexAccept}, which we will define below, and that this function does nothing to reduce the "size" of $r$, which means we need to be careful about infinite looping. More on that below.
+This function takes a \texttt{Regex} and a word, and produces all splits of the word where the first part of the split satisfies the regex. By splits of a word, we mean splitting the word into two subwords, that when concatenated give the original word. For example splits of $abc$ are:
+\[ [(abc,\epsilon),\ (ab,c),\ (a,bc),\ (\epsilon,abc)] \]
+and for this particular input word, with the regex $c^\star a^\star$, \texttt{initCheck} would output $(\epsilon, abc)$ and $(a,bc)$. Note that this function does use \texttt{regexAccept}, which we will define below, and that this function does nothing to reduce the ``size'' of $r$, which means we need to be careful about infinite looping. More on that below.
 \begin{code}
 initCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
 initCheck r w = filter (regexAccept r . fst) $ splits w where
@@ -127,8 +126,9 @@ regexAccept (Seq r r') cs = any (regexAccept r' . snd) $ initCheck r cs
 -- if word is empty, star is true
 regexAccept (Star _) [] = True
 -- general star case
-regexAccept (Star r) cs = any (regexAccept (Star r) . snd) $ ignoreEmpty $ initCheck r cs
-  where ignoreEmpty = if regexAccept r [] then init else id
+regexAccept (Star r) cs = 
+  any (regexAccept (Star r) . snd) $ ignoreEmpty $ initCheck r cs
+  where ignoreEmpty = if regexAccept r [] then init else id 
 \end{code}
 In the general case of \texttt{Star}, similar to \texttt{Seq}, we want to find all initial segments of the word that satisfy the regular expression; but now we try to proceed using \texttt{Star r} again. There is an important, subtlety, however: we want to avoid infinite looping, which may happen if our regular expression accepts the empty word.
 

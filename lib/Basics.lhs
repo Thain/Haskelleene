@@ -1,6 +1,6 @@
 \section{Basic Library}\label{sec:Basics}
 
-\subsection{The Alphabet}
+\subsection{The Alphabet}\label{subsec:alphabet}
 
 In this section we define our most basic data structure: a finite input alphabet. Our current implementation choice is to record alphabet as a \emph{type class}, equipped with a complete list of symbols:
 

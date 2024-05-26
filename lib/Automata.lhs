@@ -1,5 +1,5 @@
 
-\subsection{Automata}\label{sec:Automata}
+\subsection{Deterministic and Non-Deterministic Automata}\label{sec:Automata}
 
 Our first major goal is to implement (non)deterministic automata. Recall that an automaton with input alphabet $\Sigma$ consists of a set of states, a subset of accepting states, and a transition function $\delta$. As input, $\delta$ takes a symbol of the alphabet, and a current state of the automaton. For a deterministic automaton, it outputs a unique next state; For a non-deterministic automaton, it outputs a \emph{list} of possible next states.
 
@@ -212,4 +212,4 @@ fromStartNA nda st = Set.fromList $ epReachable ntrans st
   where ntrans = ndelta nda
 \end{code}
 
-We have tested the behavioural equivalence using the above transition in Section~\ref{sec:Examples}.
+We have tested the behavioural equivalence using the above transitions in Section~\ref{sec:Examples}.

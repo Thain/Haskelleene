@@ -1,22 +1,38 @@
-
 \section{Examples and Testing}\label{sec:Examples}
 
-\begin{code}
+In this section we define several examples of (non)deterministic automata and regular expressions, and run tests on them to verify the correctness of our algorithm written earlier. More concretely, we would like to test:
+\begin{itemize}
+\item All the basic semantic layers for (non)deterministic automata and regular expressions should be correctly working.
+\item The conversion between deterministic and non-deterministic automata implemented in Section~\ref{sec:Automata} should be behaviourally equivalent. 
+\item The conversion between (non)deterministic automata and regular expressions implemented in Section~\ref{sec:DetAut} should be behaviourally equivalent.
+\end{itemize}
 
+\subsection{Examples of Automata and Regular Expressions}\label{subsec:examples}
+
+We begin by including the relevant modules.
+\begin{code}
 module Examples where
 
-import Basics
+import Basics ( Letter(..) )
 import Automata
-import Regex
-import Kleene
-import Data.Maybe
+    ( NDetAut,
+      DetAut,
+      AutData(AD),
+      detCheck,
+      encodeDA,
+      run,
+      acceptDA,
+      encodeNA,
+      decode,
+      runNA,
+      ndautAccept )
+import Regex ( Regex(..) )
+import Kleene ( autToReg, dautToReg )
+import Data.Maybe ( fromJust )
+\end{code}
 
--- ----------------------
--- DETERMINISTIC AUTOMATA
--- ----------------------
-
--- Automata
-
+Some examples of deterministic automata:
+\begin{code}
 myAutData :: AutData Letter Int
 myAutData = AD [1,2,3,4]        -- the states
                [4]              -- accepting states
@@ -57,7 +73,10 @@ wikiDA = fromJust $ encodeDA wikiAutData
 
 wikiDAtoReg :: Regex Letter
 wikiDAtoReg = dautToReg wikiDA 0
+\end{code}
 
+By manually checking, the following should be an accepting input for \texttt{myDA}.
+\begin{code}
 -- an accepting sequence of inputs
 myInputs :: [Letter]
 myInputs = [A,A,A,A,B,C,B,B,B,A]
@@ -66,7 +85,10 @@ myTestRun :: (Int, Bool)
 myTestRun = (finalst, result)
   where finalst = run myDA 1 myInputs
         result = acceptDA myDA 1 myInputs
+\end{code}
 
+Let us also consider examples of a non-deterministic automaton:
+\begin{code}
 myNAutData :: AutData Letter Int
 myNAutData = AD [1,2,3,4]         -- the states
                 [4]               -- accepting states
@@ -87,14 +109,11 @@ myNAutData = AD [1,2,3,4]         -- the states
 
 myNDA :: NDetAut Letter Int
 myNDA = encodeNA myNAutData
+\end{code}
 
-myNDAtoReg :: Regex Letter
-myNDAtoReg = autToReg (decode myNDA, 1)
+Again, some simple cases to ensure basic performance:
 
--- what epsilon transitions does 1 have? should just be [2,3]
-nothingFrom1 :: [Int]
-nothingFrom1 = ndelta myNDA Nothing 1
-
+\begin{code}
 myNInputsFalse :: [Letter]
 myNInputsFalse = [B,B,A]
 
@@ -110,26 +129,20 @@ myNTestRunTrue :: ([([Letter],Int)],Bool)
 myNTestRunTrue = (filist,result)
   where filist = runNA myNDA 1 myNInputsTrue
         result = ndautAccept myNDA 1 myNInputsTrue
+\end{code}
 
-exampleAut :: AutData String Int
-exampleAut = AD [1,2,3] [2] [(1, [(Just "a", 1), (Just "b", 2)]), (2, [(Just "b", 2), (Just "a", 3)   ]), (3, [(Just "a", 2), (Just "b", 2)])]
+Using the Kleene algorithm in Section~\ref{sec:DetAut}, we should be able to transform the non-deterministic automaton to regular expressions:
 
-exampleAut2 :: AutData String Int
-exampleAut2 = AD [1,2,3,4] [4] [(1, [(Just "a", 2)]), (2, [(Just "a", 3)]), (3, [(Just "a", 4)])]
+\begin{code}
+myNDAtoReg :: Regex Letter
+myNDAtoReg = autToReg (decode myNDA, 1)
+\end{code}
 
--- Regexes
-
+Here are also some examples for regular expressions:
+\begin{code}
 exampleRegex :: Regex Letter
 exampleRegex = Star (Alt (L A) (L B))
 
 annoyingRegex :: Regex Letter
 annoyingRegex = Alt Empty (Seq Epsilon (L A))
-
--- examples
-abc,abca,aOrbc :: Regex Letter
-abc = seqList' [A,B,C]
-abca = seqList' [A,B,C,A]
-aOrbc = Seq abc $ Star (Alt (L A) (Seq (L B) (L C)))
-
-
 \end{code}
