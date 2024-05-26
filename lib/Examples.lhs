@@ -1,13 +1,15 @@
-\section{Examples and Testing}\label{sec:Examples}
+\section{Testing}\label{sec:Testing}
 
-In this section we define several examples of (non)deterministic automata and regular expressions, and run tests on them to verify the correctness of our algorithm written earlier. More concretely, we would like to test:
+\subsection{Examples}\label{subsec:Examples}
+
+In this section we define several examples of (non)deterministic automata and regular expressions, and run tests on them to verify the correctness of our algorithms written earlier. More concretely, we would like to test:
 \begin{itemize}
 \item All the basic semantic layers for (non)deterministic automata and regular expressions should be correctly working.
 \item The conversion between deterministic and non-deterministic automata implemented in Section~\ref{sec:Automata} should be behaviourally equivalent. 
-\item The conversion between (non)deterministic automata and regular expressions implemented in Section~\ref{sec:DetAut} should be behaviourally equivalent.
+\item The conversion between (non)deterministic automata and regular expressions implemented in Section~\ref{sec:Kleene} should be behaviourally equivalent.
 \end{itemize}
 
-\subsection{Examples of Automata and Regular Expressions}\label{subsec:examples}
+\subsubsection{Examples of Automata and Regular Expressions}\label{subsubsec:examples}
 
 We begin by including the relevant modules.
 \begin{code}
@@ -31,7 +33,24 @@ import Kleene ( autToReg, dautToReg )
 import Data.Maybe ( fromJust )
 \end{code}
 
-Some examples of deterministic automata:
+Now we give some examples of automata. Our first is the following deterministic automaton:
+\[
+  \begin{tikzcd}
+    1 & 2 \\
+    3 & 4
+    \arrow["a", from=1-1, to=1-1, loop, in=105, out=165, distance=5mm]
+    \arrow["b", curve={height=-6pt}, from=1-1, to=1-2]
+    \arrow["c"', curve={height=6pt}, from=1-1, to=2-1]
+    \arrow["c", curve={height=-6pt}, from=1-2, to=1-1]
+    \arrow["b", from=1-2, to=1-2, loop, in=15, out=75, distance=5mm]
+    \arrow["a", from=1-2, to=2-2]
+    \arrow["a"', curve={height=6pt}, from=2-1, to=1-1]
+    \arrow["c", from=2-1, to=2-1, loop, in=195, out=255, distance=5mm]
+    \arrow["b"', from=2-1, to=2-2]
+    \arrow["{a,b,c}", from=2-2, to=2-2, loop, in=285, out=345, distance=5mm]
+  \end{tikzcd}
+\]
+
 \begin{code}
 myAutData :: AutData Letter Int
 myAutData = AD [1,2,3,4]        -- the states
@@ -58,7 +77,7 @@ myDA = fromJust $ encodeDA myAutData
 myDAtoReg :: Regex Letter
 myDAtoReg = dautToReg myDA 1
 
-wikiAutData :: AutData Letter Int -- automata taken from Wikipedia Page on Kleenes Algorihtim
+wikiAutData :: AutData Letter Int -- automata taken from Wikipedia Page on Kleenes Algorihtm
 wikiAutData = AD [0,1]
                  [1]
                  [(0, [(Just A, 0)
@@ -87,7 +106,23 @@ myTestRun = (finalst, result)
         result = acceptDA myDA 1 myInputs
 \end{code}
 
-Let us also consider examples of a non-deterministic automaton:
+Let us also consider this example of a non-deterministic automaton:
+\[\begin{tikzcd}
+	1 && 2 \\
+	\\
+	3 && 4
+	\arrow["\epsilon", from=1-1, to=1-1, loop, in=55, out=125, distance=10mm]
+	\arrow["{\epsilon, a}", curve={height=-6pt}, from=1-1, to=1-3]
+	\arrow["{c,a,\epsilon}"', curve={height=6pt}, from=1-1, to=3-1]
+	\arrow["a"', from=1-1, to=3-3]
+	\arrow["c", curve={height=-6pt}, from=1-3, to=1-1]
+	\arrow["b", from=1-3, to=1-3, loop, in=55, out=125, distance=10mm]
+	\arrow["\epsilon", curve={height=-6pt}, from=1-3, to=3-3]
+	\arrow["a"', curve={height=6pt}, from=3-1, to=1-1]
+	\arrow["c"', from=3-1, to=3-1, loop, in=305, out=235, distance=10mm]
+	\arrow["c", curve={height=-6pt}, from=3-3, to=1-3]
+	\arrow["{b,c}"', from=3-3, to=3-3, loop, in=305, out=235, distance=10mm]
+\end{tikzcd}\]
 \begin{code}
 myNAutData :: AutData Letter Int
 myNAutData = AD [1,2,3,4]         -- the states
@@ -107,6 +142,7 @@ myNAutData = AD [1,2,3,4]         -- the states
                 ,(4,[(Just B,4)
                     ,(Just C,4)])]
 
+-- this automaton, encoded
 myNDA :: NDetAut Letter Int
 myNDA = encodeNA myNAutData
 \end{code}
@@ -114,11 +150,9 @@ myNDA = encodeNA myNAutData
 Again, some simple cases to ensure basic performance:
 
 \begin{code}
-myNInputsFalse :: [Letter]
-myNInputsFalse = [B,B,A]
-
-myNInputsTrue :: [Letter]
-myNInputsTrue = []
+myNInputsTrue, myNInputsFalse :: [Letter]
+myNInputsFalse = [B,B,A] -- should reject
+myNInputsTrue = []       -- should accept 
 
 myNTestRunFalse :: ([([Letter],Int)],Bool)
 myNTestRunFalse = (filist,result)
@@ -131,18 +165,9 @@ myNTestRunTrue = (filist,result)
         result = ndautAccept myNDA 1 myNInputsTrue
 \end{code}
 
-Using the Kleene algorithm in Section~\ref{sec:DetAut}, we should be able to transform the non-deterministic automaton to regular expressions:
+Using the Kleene algorithm in Section~\ref{sec:Kleene}, we should be able to transform the non-deterministic automaton, and one of its states, into a regular expression.
 
 \begin{code}
 myNDAtoReg :: Regex Letter
 myNDAtoReg = autToReg (decode myNDA, 1)
-\end{code}
-
-Here are also some examples for regular expressions:
-\begin{code}
-exampleRegex :: Regex Letter
-exampleRegex = Star (Alt (L A) (L B))
-
-annoyingRegex :: Regex Letter
-annoyingRegex = Alt Empty (Seq Epsilon (L A))
 \end{code}
