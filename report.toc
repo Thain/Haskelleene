@@ -5,10 +5,10 @@
 \contentsline {section}{\numberline {2}Automata and Regular Expressions}{10}{section.2}%
 \contentsline {subsection}{\numberline {2.1}Regular Expressions to Automata}{10}{subsection.2.1}%
 \contentsline {subsection}{\numberline {2.2}Automata to Regular}{13}{subsection.2.2}%
-\contentsline {subsubsection}{\numberline {2.2.1}Kleene's Algorithim}{13}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.1}Kleene's Algorithim}{14}{subsubsection.2.2.1}%
 \contentsline {subsection}{\numberline {2.3}Issues with the Algorithims}{16}{subsection.2.3}%
 \contentsline {section}{\numberline {3}Examples and Testing}{16}{section.3}%
 \contentsline {section}{\numberline {4}Wrapping it up in an exectuable}{18}{section.4}%
-\contentsline {section}{\numberline {5}Simple Tests}{18}{section.5}%
-\contentsline {section}{\numberline {6}Conclusion}{19}{section.6}%
-\contentsline {section}{Bibliography}{19}{section.6}%
+\contentsline {section}{\numberline {5}Simple Tests}{19}{section.5}%
+\contentsline {section}{\numberline {6}Conclusion}{20}{section.6}%
+\contentsline {section}{Bibliography}{20}{section.6}%
