@@ -36,19 +36,6 @@ import qualified Data.Map.Strict as Map
 
 type RgxAutData l = (AutData l Int, Int)
 
--- ---------------
--- REGEX to DetAut
--- ---------------
-
--- Since regex to automata inducts on the transition functions, we need a way to glue or reshape our automata nicely
--- As we add more states we need to relabel them. The base states are 1 and 2, multiplying by 3, 13 is sequence, multiplying by 5 and 7 is Alt, multiplying by 11 is Star
-
---useful function to glue states together
-
-
--- For each operator we define two corresponding functions. One outputs the automata data associated with that operator, 
--- the other stitches and modifies the transition function across the inputs automata (mostly using Epsilon transitions)
-
 regToAut :: Regex l -> RgxAutData l
 -- gives an integer automata and a starting state
 regToAut Empty = (AD [1] [] [], 1)
@@ -61,10 +48,9 @@ regToAut (Star a)  = starRegAut $ regToAut a
 fromReg :: (Alphabet l) => Regex l -> (NDetAut l Int, Int)
 fromReg reg = (encodeNA ndata,st)
   where (ndata,st) = regToAut reg
-
 \end{code}
 
-As we had into each inductive step, we note a few conventions. 
+As we head into each inductive step, we note a few conventions. 
 First, an observant reader will have seen that our function outputs automata data with integer states. 
 Since we are inductively constructing automata we need to be adding new states while preserving the old ones (and their transition functions).
 Integer states make it very easy to relabel them, and - as we will see later - make it much easier to run algorithms on.
@@ -121,7 +107,7 @@ gluingAlt (aut1,s1) (aut2,s2) = start ++ firstAut ++endFirstAut ++ secondAut ++ 
   endSecondAut = [(x*7, (Nothing,2) : multTuple 7 (aut2 `trsOf` x)) | x <- acceptData aut2]
 \end{code}
 
-Our construction for alternate is defined similarly to Sequence.
+Our construction for Alternate is defined similarly to Sequence.
 We add a new initial and acceptance state to ensure that our gluing preserves the appropriate transition functions.
 Lastly, we define our Star construction as follows (alongside some helper functions):
 
@@ -151,19 +137,7 @@ addTuple n ((a,b):xs) = (a,n+b) : multTuple n xs
 \end{code}
 For Star we add a single node which serves as both the initial state and an accept state. 
 By connecting the beginning and ending of our starting automaton we create an abstract loop - which clearly corresponds to Star.
-Now that we have defined each construction, we provide a brief proof of the following lemma:
 
-\begin{lemma}
-  Each regular expression $r$ gives rise to (at least one) non-deterministic automaton, $D,$ such that
-  \[L(r) = L(D).\]
-\end{lemma}
-
-\begin{proof}
-Let $r$ be an arbitrary regular expression and set $aut=(fst.fromReg) r.$ First, consider some $w \in L(r)$ and proceed via induction to show that $w\in L(aut).$
-
-We believe the base cases are clear from construction and so move one
-
-\end{proof}
 
 This construction was relatively straightforward since by looking at what each operator in a regular expression means an automaton immediately suggests itself.
 The next algorithm, moving from automata to regular expressions, is far less intuitive, and encounters difficulties we will note in the final section.
@@ -202,7 +176,7 @@ If our regex to automata algorithm worked by building up an automaton to follow 
 When $k=-1$, we want to return a regex corresponding to the set of paths from $i$ directly to $j$ without stopping at any either state along the way.
 This is simply the set of transition labels which connect $i$ to $j$ (alongside Epsilon if $i=j$.)
 However, if $k>-1$, we need to remove the $k$'th state and shift the transition functions into and out of $k$ amidst the rest of the automaton.
-First, we don't touch any of the paths which avoid $k$ by including $kleeneAlgo aut i j (k-1).$
+First, we don't touch any of the paths which avoid $k$ by including $\texttt{kleeneAlgo} \ \texttt{aut} \ i \ j \ (k-1).$
 The remaining sequence can be viewed as: take any path to you want to $k$ but stop \textit{as soon as} you reach $k$ for the first time;
 then, take any path from $k$ to $k$ as many times as you want (we need the Star here because this algorithm does not normally permit loops);
 finally, take any path from $k$ to $j.$
@@ -213,25 +187,19 @@ TIKZ EXAMPLE.
 
 With this broad motivation, we can know discuss how to implement the algorithm to provide our desired conversion:
 \begin{code}
--- Take a collection of data and starting states, outputs a regular expression which corresponds to the language. This version creates a nice first and last state
-autToRegSlow :: Eq l => Ord s => (AutData l s, s)-> Regex l
-autToRegSlow (aut, s)= kleeneAlgo intAut 0 lastState lastState where 
-  intAut = (fst.cleanAutomata.relabelAut) (aut,s)
-  lastState = length (stateData intAut) - 1 
---autToReg aut [s]= kleeneAlgo newAut 0 (length stateData aut) (length stateData aut) where newAut = cleanAutomata . relabelAut aut
+ 
 
---This version does not make a nice first and last state (and thus can't be adapted to multiple start states), but cuts down on the epislons
+
 autToReg :: Eq l => Ord s => (AutData l s, s)-> Regex l
 autToReg (aut, s)= altList [kleeneAlgo intAut firstState a lastState | a <- acceptData intAut] where 
   intAut = fst $ relabelAut (aut,s)
   firstState = relabelHelp aut s
   lastState = length (stateData intAut) - 1
 
---following the Wikipedia page, this function recursively removes elements and uses the removed transition labels to construct the regex. 
 
 \end{code}
 This takes an automaton (and a starting state), transforms that automaton into one with the appropriate state labels and then applies the algorithm on the initial state and every accepting state.
-For a given accepting state $a$, (kleeneAlgo aut firstState $a$ lastState) provides a regular expression corresponding to the paths from the initial state to $a$ with no restrictions - we have set $k$ to be higher than every state label.
+For a given accepting state $a$, $(\texttt{kleeneAlgo} \ \texttt{aut} \  \text{firstState} \ a$ lastState) provides a regular expression corresponding to the paths from the initial state to $a$ with no restrictions - we have set $k$ to be higher than every state label.
 This is exactly what we were looking for, given our previous understanding of the algorithm itself.
 
 Below we briefly describe the helper functions needed for this implementation as well as an alternate definition of autToReg, whose problems we will expound upon in the last section of this chapter.
@@ -273,6 +241,10 @@ cleanTransition (aut, s) = start ++ middle ++ end where
   middle = [(x+1, addTuple 1 (aut `trsOf` x)) | x <- stateData aut, x `notElem` acceptData aut]
   end = [(x+1, (Nothing, length (stateData aut) + 1) : addTuple 1 (aut `trsOf` x)) | x<- acceptData aut]
 
+autToRegSlow :: Eq l => Ord s => (AutData l s, s)-> Regex l
+autToRegSlow (aut, s)= kleeneAlgo intAut 0 lastState lastState where 
+  intAut = (fst.cleanAutomata.relabelAut) (aut,s)
+  lastState = length (stateData intAut) - 1
 
 \end{code}
 These last pieces of code allow us to define a version of autToReg which takes in multiple initial states rather than just one. 
@@ -303,4 +275,19 @@ dautToRegSub daut s0 (s1:ss) sn = simplifyRegex $ Alt reg1 $ Seq reg2 $ Seq (Sta
 
 \subsection{Issues with the Algorithms}
 
-Notes on why it took big and why it cant be fixed
+The most prominent issues with this algoritihim is that it creates very complex regular expression - each step adds a sequence, an alternate, and a star operator.
+We have attempted to implement a few simplification throughout the algorithim, but it still outputs horribly over complex expressions.
+
+For example,
+
+\[\texttt{autToReg}  \ (\texttt{wikiAutData}, 0) = b+c+((\epsilon+a)(a^*)(b+c))+((b+c+((\epsilon+a)(a^*)(b+c)))(\epsilon+b+((a+c)(a^*)(b+c)))*(\epsilon+b+((a+c)(a^*)(b+c)))) \]
+which, upon manual reduction, is equivalent to
+\[a^*b\left (a ( a+b)+b \right)^*.\]
+However, reduction of regular expressions is NP-hard, and so we have simply tried to encode a few, computationally quick, simplifcations as noted in the regex section.
+This also highlights why $\texttt{autToRegSlow}$ was abandoned - it adds several aditional $\epsilon$ transitions to \textit{each} step of the algorithim, which in turn further blows up the regular expression.
+This is most pressing when we convert back into an automata, since each new operator corresponds to an additional structural level in the automata and an additional computation complication we need to overcome when running words on automata.
+There are several ways this could be improved, but they fall beyond the scope of this report. 
+Perhaps most straightforward we could further improve our regular expression simplifcation - or change the inductive construction to more easily allow for commutativity.
+Furthermore, their are additional algoritihims beyond just Kleene's for converting from automata to regular expression, applying mutliple ones and picking the least complicated would be an additional option.
+Finally, we could instead simplify the autmata rather than the regular expression.
+There exists a minimal equivalent determinisitic automata for every regular language, implementing such a minimization algoritihm would also increase usability.
