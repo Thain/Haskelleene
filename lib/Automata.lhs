@@ -22,7 +22,19 @@ type TDict l s = [(s, [(Maybe l, s)])]
 data AutData l s = AD { stateData :: [s] 
                       , acceptData :: [s] 
                       , transitionData :: TDict l s }
-                      deriving Show
+
+instance (Show l, Show s, Eq l, Eq s) => Show (AutData l s) where
+  show ad = "States:" ++ showSts ad (stateData ad) ++ "\n\nTransitions:" ++ transitions (transitionData ad) where
+    showSts _ [] = ""
+    showSts d (s:ss) = " " ++ show s ++ isAccept s d ++ showSts d ss
+    isAccept s d = if s `elem` acceptData d then "*" else ""
+    transitions [] = ""
+    transitions (t:ts) = "\n" ++ stTrs t ++ transitions ts
+    stTrs (_, []) = ""
+    stTrs (s, (t:ts)) = "\n" ++ show s ++ " --" ++ letter ++ "-> " ++ output ++ stTrs (s,ts) where
+      letter | (fst t) == Nothing = "em"
+             | otherwise = show $ fromJust (fst t)
+      output = show $ snd t
 \end{code}
 
 Here \texttt{l} should be thought of as the type of the chosen alphabet, while \texttt{s} is the type of our states. The type \texttt{TDict} then acts as the type of transition tables. A pair in \texttt{TDict} should be thought of recoding the information of given a current state, what are the possible output states of a given input. The fact that we have used \texttt{Maybe l} is that we want the type \texttt{AutData} to be simultaneously able to record both deterministic and non-deterministic automata, thus with the possibility of $\epsilon$-transitions. For some examples of using
@@ -152,7 +164,7 @@ decode nda = AD { stateData = sts
         graph f as = zip as $ f <$> as
 \end{code}
 
-We end with the semantic layer for non-determinisitic automata. The algorithm used for implementing \texttt{runNA} for trasversing an input string on a non-deterministic automaton is inspired by~\cite{web}. Intuitively, we record a list of \emph{active states} at each step of the trasversal, with its corresponding remaining list of inputs. If there are no possible transition states with the given input, we terminiate and record it in the output. The function \texttt{ndautAccept} then checks whether there is an output that consumes all the inputs, and terminiates at an accepting state.
+We end with the semantic layer for non-deterministic automata. The algorithm used for implementing \texttt{runNA} for trasversing an input string on a non-deterministic automaton is inspired by~\cite{web}. Intuitively, we record a list of \emph{active states} at each step of the trasversal, with its corresponding remaining list of inputs. If there are no possible transition states with the given input, we terminiate and record it in the output. The function \texttt{ndautAccept} then checks whether there is an output that consumes all the inputs, and terminiates at an accepting state.
 
 \begin{code}
 runNA :: (Alphabet l, Ord s) => NDetAut l s  -> s -> [l] -> [([l], s)]
@@ -186,7 +198,17 @@ fromDA da = NA { nstates = states da
   newDelta (Just l) st = [delta da l st]
 \end{code}
 
-The non-trivial direction is that any non-deterministic automaton can also be converted into a deterministic one, with possibly different set of states and transition functions. The general idea is simple: We change the set of states to the set of \emph{subset} of the original non-determinisitic automaton. This way, we may code the non-deterministic behaviour in a deterministic way. The algorithm is inspired by~\cite{book_marcelo}.
+As an aside, we can now actually create \texttt{Show} instances for both \texttt{DetAut} and \texttt{NDetAut}, but decoding them to \texttt{AutData} and using the \texttt{Show} instance we defined for that:
+
+\begin{code}
+instance (Alphabet l, Show l, Show s, Eq l, Eq s) => Show (NDetAut l s) where
+  show = show . decode
+
+instance (Alphabet l, Show l, Show s, Eq l, Eq s) => Show (DetAut l s) where
+  show = show . decode . fromDA
+\end{code}
+
+Now returning to automaton conversion: the non-trivial direction is that any non-deterministic automaton can also be converted into a deterministic one, with possibly different set of states and transition functions. The general idea is simple: We change the set of states to the set of \emph{subset} of the original non-determinisitic automaton. This way, we may code the non-deterministic behaviour in a deterministic way. The algorithm is inspired by~\cite{book_marcelo}.
 
 \begin{code}
 -- The Power-set Construction: NA -> DA 
