@@ -16,7 +16,11 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Automata
       Basics
+      Examples
+      Kleene
+      Regex
   other-modules:
       Paths_report
   hs-source-dirs:
