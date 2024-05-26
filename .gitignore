@@ -21,3 +21,9 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
+auto
+report*fdb*
+report.out
+report.aux
+report.bbl
+report.blg

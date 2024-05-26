@@ -5,10 +5,11 @@
 \contentsline {section}{\numberline {2}Automata and Regular Expressions}{11}{section.2}%
 \contentsline {subsection}{\numberline {2.1}Regular Expressions to Automata}{11}{subsection.2.1}%
 \contentsline {subsection}{\numberline {2.2}Automata to Regular}{14}{subsection.2.2}%
-\contentsline {subsubsection}{\numberline {2.2.1}Kleene's Algorithim}{15}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.1}Kleene's Algorithim}{14}{subsubsection.2.2.1}%
 \contentsline {subsection}{\numberline {2.3}Issues with the Algorithms}{17}{subsection.2.3}%
-\contentsline {section}{\numberline {3}Examples and Testing}{17}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Examples of Automata and Regular Expressions}{18}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}Testing Behavioural Equivalence}{20}{subsection.3.2}%
+\contentsline {section}{\numberline {3}Testing}{17}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Examples}{17}{subsection.3.1}%
+\contentsline {subsubsection}{\numberline {3.1.1}Examples of Automata and Regular Expressions}{17}{subsubsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.2}QuickCheck}{20}{subsection.3.2}%
 \contentsline {section}{\numberline {4}Conclusion}{21}{section.4}%
 \contentsline {section}{Bibliography}{21}{section.4}%

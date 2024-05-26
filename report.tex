@@ -2,7 +2,8 @@
 \input{latexmacros.tex}
 \UseRawInputEncoding
 
-\title{Haskelleene: An Implementation of Regular Expression and Automata Equivalence}
+\title{Haskelleene: A Very Haskell Implementation of Regular Expression and
+ Finite Automaton Equivalence}
 \author{Liam Chung, Brendan Dufty, Lingyuan Ye}
 \date{\today}
 \hypersetup{pdfauthor={Me}, pdftitle={My Report}}
@@ -12,7 +13,7 @@
 \maketitle
 
 \begin{abstract}
-  In this document, we implement (non)deterministic automata and regular expressions, with their corresponding semantics of regular languages. We also implement the well-known conversion between automata and regular expressions, and use QuickCheck to verify their behavioural equivalence.
+In this project, we implement finite (non)deterministic automata and regular expressions, with their corresponding semantics of regular languages. We also implement the conversions between these different structures, including power-set determinisation and Kleene's algorithm. Lastly, we use QuickCheck to verify the behavioural equivalence of automata and regular expressions under these constructions, as stated by Kleene's Theorem.
 \end{abstract}
 
 \vfill
@@ -23,8 +24,6 @@
 
 % We include one file for each section. The ones containing code should
 % be called something.lhs and also mentioned in the .cabal file.
-
-% \input{Howto.tex}
 
 \input{lib/Basics.lhs}
 \input{lib/Automata.lhs}

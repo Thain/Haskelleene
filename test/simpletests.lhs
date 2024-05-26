@@ -1,4 +1,5 @@
-\subsection{Testing Behavioural Equivalence}\label{sec:simpletests}
+
+\subsection{QuickCheck}\label{sec:QuickCheck}
 
 We now use the library QuickCheck to randomly generate input for our functions
 and test some properties.
@@ -9,31 +10,12 @@ module Main where
 import Test.Hspec ( hspec, describe, it, shouldBe )
 import Test.Hspec.QuickCheck ( prop )
 import Test.QuickCheck ( (==>) )
-import Automata
-    ( acceptDA, decode, fromNA, fromStartNA, ndautAccept )
+import Automata ( acceptDA, decode, fromNA, fromStartNA, ndautAccept )
 import Regex ( regexAccept )
 import Kleene ( autToReg, dautToReg, fromReg )
 import Examples ( exampleRegex, myNDA, myTestRun, wikiDA )
 
 \end{code}
-
-% Here is the example deterministic automaton that is below:
-% \[
-%   \begin{tikzcd}
-%     1 & 2 \\
-%     3 & 4
-%     \arrow["a", from=1-1, to=1-1, loop, in=105, out=165, distance=5mm]
-%     \arrow["b", curve={height=-6pt}, from=1-1, to=1-2]
-%     \arrow["c"', curve={height=6pt}, from=1-1, to=2-1]
-%     \arrow["c", curve={height=-6pt}, from=1-2, to=1-1]
-%     \arrow["b", from=1-2, to=1-2, loop, in=15, out=75, distance=5mm]
-%     \arrow["a", from=1-2, to=2-2]
-%     \arrow["a"', curve={height=6pt}, from=2-1, to=1-1]
-%     \arrow["c", from=2-1, to=2-1, loop, in=195, out=255, distance=5mm]
-%     \arrow["b"', from=2-1, to=2-2]
-%     \arrow["{a,b,c}", from=2-2, to=2-2, loop, in=285, out=345, distance=5mm]
-%   \end{tikzcd}
-% \]
 
 We have tested the following basic facts:
 \begin{itemize}
