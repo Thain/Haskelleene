@@ -79,7 +79,7 @@ gluingSeq (aut1, _) (aut2, s2) =  fstAut ++ mid ++ sndAut where
 This function takes two automata \texttt{aut1,aut2} and glues them together by adding epsilon transitions between the accepting states of \texttt{aut1} and the starting state of \texttt{aut2}.
 We need to add these epsilon transitions rather than merely identify the starting/ending in order to preserve transitions out of said states.
 For example, if we identify states 1 and 2 in the following two automata (blue states being intial, ornage being accepting):
-\\[\begin{tikzcd}[ampersand replacement=\&]
+\[\begin{tikzcd}[ampersand replacement=\&]
 	\textcolor{rgb,255:red,92;green,92;blue,214}{2} \&\& \textcolor{rgb,255:red,214;green,153;blue,92}{3} \\
 	\textcolor{rgb,255:red,92;green,92;blue,214}{0} \&\& \textcolor{rgb,255:red,214;green,153;blue,92}{1}
 	\arrow["a", from=1-1, to=1-1, loop, in=55, out=125, distance=10mm]
@@ -300,7 +300,7 @@ The most prominent issue with this algoritihm is that it creates very complex re
 We have attempted to implement a few simplification throughout the algorithm, but it still outputs expressions that are horribly over-complex.
 
 For example,
-\being{align*}\texttt{autToReg}  \ (\texttt{wikiAutData}, 0) \\ 
+\begin{align*}\texttt{autToReg}  \ (\texttt{wikiAutData}, 0) \\ 
 = \\
  b+c+((\epsilon+a)(a^*)(b+c))+((b+c+((\epsilon+a)(a^*)(b+c)))(\epsilon+b+((a+c)(a^*)(b+c)))*(\epsilon+b+((a+c)(a^*)(b+c)))) \end{align*}
 which, upon manual reduction, is equivalent to

@@ -32,3 +32,6 @@ report.out
 report.aux
 report.bbl
 report.blg
+.DS_Store
+*.toc
+*.log
