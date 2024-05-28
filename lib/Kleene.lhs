@@ -2,7 +2,7 @@
 \section{Automata and Regular Expressions}\label{sec:Kleene}
 
 We have now defined (non)deterministic automata and regular expressions. 
-Next, perhaps unsurprisingly, since these are well known to be two sides of the same coin, we encode a method to translating between them.
+Next, perhaps unsurprisingly, since these are well known to be two sides of the same coin, we encode a method to translate between them.
 \textbf{Possible to do:} and prove these operations are inverses of each other.
 Converting from a regex to a non-deterministic automaton is relatively straightforward, so we will begin with that.
 Second, we will describe Kleene's algorithm (a variation of the Floyd-Warshall Algorithm) in order to transform an automaton into a regex.
@@ -261,52 +261,41 @@ cleanTransition (aut, s) = start ++ middle ++ end where
   start = [(0, [(Nothing, s+1)])]
   middle = [(x+1, addTuple 1 (aut `trsOf` x)) | x <- stateData aut, x `notElem` acceptData aut]
   end = [(x+1, (Nothing, length (stateData aut) + 1) : addTuple 1 (aut `trsOf` x)) | x<- acceptData aut]
-
-autToRegSlow :: Eq l => Ord s => (AutData l s, s)-> Regex l
-autToRegSlow (aut, s)= kleeneAlgo intAut 0 lastState lastState where 
-  intAut = (fst.cleanAutomata.relabelAut) (aut,s)
-  lastState = length (stateData intAut) - 1
-
 \end{code}
+\textbf{AUTTOREGSLOW WAS REMOVED HERE, DIDN'T REMOVE ANY OTHER TEXT}
 These last pieces of code allow us to define a version of autToReg which takes in multiple initial states rather than just one. 
 It does so by adding a new initial (and accepting) state after the relabeling - connected via epsilon transition.
 While this construction is more general, it adds several more transitions which further increase the size of the corresponding regular expression.
 More on this issue in the following section.
 \begin{code}
--- Another implementation of Automata to Reg
--- We assume the automaton is deterministic 
-
+-- Another implementation of Automata to Reg, assuming the aut is deterministic 
 dautToReg :: (Alphabet l, Ord s) => DetAut l s -> s -> Regex l 
-dautToReg daut s = simplifyRegex $ foldr (Alt . dautToRegSub daut s (states daut)) Empty $ accept daut
-
-dautToRegSub :: (Alphabet l, Ord s) => DetAut l s -> s -> [s] -> s -> Regex l 
-dautToRegSub daut s0 [] sn = if s0 /= sn then resut else Alt Epsilon resut 
-  where trans = delta daut
-        succs = filter (\l -> trans l s0 == sn) completeList
-        resut = foldr (Alt . L) Empty succs
-dautToRegSub daut s0 (s1:ss) sn = simplifyRegex $ Alt reg1 $ Seq reg2 $ Seq (Star reg3) reg4
-  where reg1 = simplifyRegex $ dautToRegSub daut s0 ss sn
-        reg2 = simplifyRegex $ dautToRegSub daut s0 ss s1
-        reg3 = simplifyRegex $ dautToRegSub daut s1 ss s1
-        reg4 = simplifyRegex $ dautToRegSub daut s1 ss sn
-
-
-
+dautToReg daut s = simplifyRegex $ foldr (Alt . dautToRegSub daut s (states daut)) Empty $ accept daut where
+  dautToRegSub da s0 [] sn = if s0 /= sn then resut else Alt Epsilon resut 
+    where trans = delta da
+          succs = filter (\l -> trans l s0 == sn) completeList
+          resut = foldr (Alt . L) Empty succs
+  dautToRegSub da s0 (s1:ss) sn = simplifyRegex $ Alt reg1 $ Seq reg2 $ Seq (Star reg3) reg4
+    where reg1 = simplifyRegex $ dautToRegSub da s0 ss sn
+          reg2 = simplifyRegex $ dautToRegSub da s0 ss s1
+          reg3 = simplifyRegex $ dautToRegSub da s1 ss s1
+          reg4 = simplifyRegex $ dautToRegSub da s1 ss sn
 \end{code}
 
 \subsection{Issues with the Algorithms}
 
 The most prominent issue with this algoritihm is that it creates very complex regular expressions---each step adds a \texttt{Seq}, \texttt{Alt}, and \texttt{Star}.
-We have attempted to implement a few simplification throughout the algorithm, but it still outputs expressions that are horribly over-complex.
-
-For example,
-\begin{align*}\texttt{autToReg}  \ (\texttt{wikiAutData}, 0) \\ 
-= \\
- b+c+((\epsilon+a)(a^*)(b+c))+((b+c+((\epsilon+a)(a^*)(b+c)))(\epsilon+b+((a+c)(a^*)(b+c)))*(\epsilon+b+((a+c)(a^*)(b+c)))) \end{align*}
+We have attempted to implement a few simplification throughout the algorithm, but it still outputs expressions that are horribly over-complex. For example,
+\begin{align*}
+&\texttt{autToReg}  \ (\texttt{wikiAutData}, 0) = \\ 
+&\quad b+c+((\epsilon +a)(a^*)(b+c))+ \\
+&\quad\quad ((b+c+((\epsilon +a)(a^*)(b+c))) \\
+&\quad\quad\ (\epsilon +b+((a+c)(a^*)(b+c)))^* \\
+&\quad\quad\ (\epsilon +b+((a+c)(a^*)(b+c))))
+\end{align*}
 which, upon manual reduction, is equivalent to
-\[a^*b\left (a ( a+b)+b \right)^*.\]
+\[ (a+c)^*b(b+c+a(a+c)^*b)^* \]
 However, reduction of regular expressions is \textsf{NP}-hard, and so we have simply tried to encode a few, computationally quick, simplifications as noted in Section~\ref{sec:Regex}
-This also highlights why $\texttt{autToRegSlow}$ was abandoned - it adds several aditional $\epsilon$ transitions to \textit{each} step of the algorithm, which in turn further blows up the regular expression.
 This is most pressing when we convert back into an automaton, since each new operator corresponds to an additional structural level in the automaton and an additional computational complication we need to overcome when running words on automata.
 There are several ways this could be improved, but they fall beyond the scope of this report. 
 Perhaps most straightforward we could further improve our regular expression simplifcation---or change the inductive construction to more easily allow for commutativity.

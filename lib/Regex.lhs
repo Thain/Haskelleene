@@ -17,26 +17,26 @@ data Regex l = Empty |
                Alt (Regex l) (Regex l) |
                Seq (Regex l) (Regex l) |
                Star (Regex l)
-  deriving (Eq)
+  deriving (Eq, Show)
 \end{code}
-We also write a robust \texttt{Show} instance for \texttt{Regex}, with many hard coded cases so as to mimic the conventions of writing regular expressions as we can. We then also include some quality-of-life functions, for example for sequencing or alternating a list of regexes, as well as doing so for some list of input letters. This allows us to turn a word into a regex representing exactly that word quickly and easily.
+We also write a robust pretty printing function for \texttt{Regex}, with many hard coded cases so as to mimic the conventions of writing regular expressions as we can. We then also include some quality-of-life functions, for example for sequencing or alternating a list of regexes, as well as doing so for some list of input letters. This allows us to turn a word into a regex representing exactly that word quickly and easily.
 \begin{code}
-instance Show l => Show (Regex l) where
-  show Empty = "em"
-  show Epsilon = "ep"
-  show (L a) = show a
-  show (Alt (Seq r r') (Seq r'' r''')) = "(" ++ show (Seq r r') ++ ")+("
-                                             ++ show (Seq r'' r''') ++ ")"
-  show (Alt (Seq r r') r'') = "(" ++ show (Seq r r') ++ ")" ++ "+" ++ show r''
-  show (Alt r'' (Seq r r')) = show r'' ++ "+" ++ "(" ++ show (Seq r r') ++ ")"
-  show (Alt r r') = show r ++ "+" ++ show r'
-  show (Seq (Alt r r') (Alt r'' r''')) = "(" ++ show (Alt r r') ++ ")(" 
-                                             ++ show (Alt r'' r''') ++ ")"
-  show (Seq (Alt r r') r'') = "(" ++ show (Alt r r') ++ ")" ++ show r''
-  show (Seq r'' (Alt r r')) = show r'' ++ "(" ++ show (Alt r r') ++ ")"
-  show (Seq r r') = show r ++ show r'
-  show (Star (L a)) = "(" ++ show a ++ "*)"
-  show (Star r) = "(" ++ show r ++ ")*"
+pPrintRgx :: Show l => Regex l -> String
+pPrintRgx Empty = "em"
+pPrintRgx Epsilon = "ep"
+pPrintRgx (L a) = show a
+pPrintRgx (Alt (Seq r r') (Seq r'' r''')) = "(" ++ pPrintRgx (Seq r r') ++ ")+("
+                                             ++ pPrintRgx (Seq r'' r''') ++ ")"
+pPrintRgx (Alt (Seq r r') r'') = "(" ++ pPrintRgx (Seq r r') ++ ")" ++ "+" ++ pPrintRgx r''
+pPrintRgx (Alt r'' (Seq r r')) = pPrintRgx r'' ++ "+" ++ "(" ++ pPrintRgx (Seq r r') ++ ")"
+pPrintRgx (Alt r r') = pPrintRgx r ++ "+" ++ pPrintRgx r'
+pPrintRgx (Seq (Alt r r') (Alt r'' r''')) = "(" ++ pPrintRgx (Alt r r') ++ ")(" 
+                                             ++ pPrintRgx (Alt r'' r''') ++ ")"
+pPrintRgx (Seq (Alt r r') r'') = "(" ++ pPrintRgx (Alt r r') ++ ")" ++ pPrintRgx r''
+pPrintRgx (Seq r'' (Alt r r')) = pPrintRgx r'' ++ "(" ++ pPrintRgx (Alt r r') ++ ")"
+pPrintRgx (Seq r r') = pPrintRgx r ++ pPrintRgx r'
+pPrintRgx (Star (L a)) = "(" ++ show a ++ "*)"
+pPrintRgx (Star r) = "(" ++ pPrintRgx r ++ ")*"
 
 -- QoL functions for sequencing or alternating lists of regexes
 seqList :: [Regex l] -> Regex l
@@ -64,7 +64,9 @@ It is outside of the scope of this project to implement a proof searcher for thi
 ...and more. The objective here is not to simplify the regular expression as far as possible, but to implement easy simplifications that improve readability (limiting occurrence of redundancies, and so on).
 \begin{code}
 simplifyRegex :: Eq l => Regex l -> Regex l
-simplifyRegex rx = 
+simplifyRegex regex | helper regex == regex = regex
+                    | otherwise = helper regex where
+ helper rx =
   case rx of
     Alt r4 (Seq r1 (Seq (Star r2) r3)) 
       | r1 == r2 && r3 == r4 -> Seq (Star (simplifyRegex r1)) (simplifyRegex r4)
@@ -75,7 +77,7 @@ simplifyRegex rx =
     (Seq Epsilon r) -> simplifyRegex r
     (Seq _ Empty) -> Empty
     (Seq Empty _) -> Empty
-    (Star Empty) -> Empty
+    (Star Empty) -> Epsilon
     (Star Epsilon) -> Epsilon
     (Star (Star r)) -> simplifyRegex $ Star r
     (Star (Alt r Epsilon)) -> simplifyRegex $ Star r

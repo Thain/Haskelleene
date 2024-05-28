@@ -20,7 +20,6 @@ import Automata
     ( NDetAut,
       DetAut,
       AutData(AD),
-      detCheck,
       encodeDA,
       run,
       acceptDA,
@@ -68,24 +67,22 @@ myAutData = AD [1,2,3,4]        -- the states
                    ,(Just B,4)
                    ,(Just C,4)])]
 
-myDACheck :: Bool
-myDACheck = detCheck myAutData
-
 myDA :: DetAut Letter Int
 myDA = fromJust $ encodeDA myAutData
 
 myDAtoReg :: Regex Letter
 myDAtoReg = dautToReg myDA 1
 
-wikiAutData :: AutData Letter Int -- automata taken from Wikipedia Page on Kleenes Algorihtm
+ -- automaton taken from Wikipedia Page on Kleenes Algorihtm
+wikiAutData :: AutData Letter Int
 wikiAutData = AD [0,1]
                  [1]
                  [(0, [(Just A, 0)
                       ,(Just B, 1)
-                      ,(Just C, 1)])
+                      ,(Just C, 0)])
                  ,(1, [(Just A, 0)
                       ,(Just B, 1)
-                      ,(Just C, 0)])]
+                      ,(Just C, 1)])]
 
 wikiDA :: DetAut Letter Int
 wikiDA = fromJust $ encodeDA wikiAutData
