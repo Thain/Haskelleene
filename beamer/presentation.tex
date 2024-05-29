@@ -45,7 +45,7 @@
 \section{Finite Automata}
 \begin{frame}[fragile]{What is an automaton?}
 An basic version of a state machine. It takes inputs from some \emph{alphabet}, moving between \emph{states} that may or may not \emph{accept}. 
-  \begin{verbatim}
+  \begin{code}
   data DetAut l s = DA { states :: [s]
                        , accept :: [s]
                        , delta  :: l -> s -> s }
@@ -53,7 +53,7 @@ An basic version of a state machine. It takes inputs from some \emph{alphabet}, 
   data NDetAut l s = NA { nstates :: [s]
                         , naccept :: [s]
                         , ndelta :: Maybe l -> s -> [s] }
-\end{verbatim}\pause
+\end{code}\pause
 \begin{itemize}
 \item a state in a deterministic automaton accepts a word if that words leads to an accepting state. \pause
 
@@ -76,7 +76,7 @@ An basic version of a state machine. It takes inputs from some \emph{alphabet}, 
     \[
       \begin{tikzcd}
         1 & 2 \\
-        3 & 4
+        3 & 4^{\star}
         \arrow["\epsilon"{description}, shift left=2, from=1-1, to=1-2]
         \arrow["b"{description}, from=1-1, to=2-1]
         \arrow["c"{description}, shift left=2, from=1-2, to=1-1]
@@ -87,12 +87,25 @@ An basic version of a state machine. It takes inputs from some \emph{alphabet}, 
     \]
   \end{frame}
 
-  \begin{frame}[fragile]{Algorithm for Running DA}
-this one is pretty easy, can shoot through it
+  \begin{frame}[fragile]{Algorithm for Running DAs}
+    Given an automaton, a starting state, and an input word\ldots
+
+    \begin{code}
+run :: DetAut l s -> s -> [l] -> s 
+run _ s0 [] = s0 
+run da s0 (w:ws) = run da (delta da w s0) ws 
+ 
+acceptDA :: (Eq s) => DetAut l s -> s -> [l] -> Bool 
+acceptDA da s0 w = run da s0 w `elem` accept da
+    \end{code}\pause \vspace{1em}
+    \ldots it's that simple! Mostly due to how much work we put into encoding automata. \vspace{1em} \pause
+
+    Unfortunately, running NAs is less simple. 
+    
   \end{frame}
   
   \begin{frame}[fragile]
-    \frametitle{Algorithm for Running NA}
+    \frametitle{Algorithm for Running NAs}
     \begin{block}{General Idea}
       Searching paths in a finite graph in general requires a lot of computational resources. However, we do not need to output the whole path, thus we only keep track of how states transform.
     \end{block}\pause
@@ -179,7 +192,7 @@ runNA na st input =
       where wsucc = ndelta na (Just w) st
     where   nsucc = ndelta na Nothing  st
     \end{code}
-    Here the function \texttt{epReachable} calculates all the states that is reachable from the current state via $\epsilon$-transitions.
+    Here the function \texttt{epReachable} calculates states reachable from the current one via $\epsilon$-transitions.
   \end{frame}
 
   \begin{frame}[fragile]
@@ -192,7 +205,6 @@ runNA na st input =
       \item Under an input $l$, a subset transforms to those states reachable from some state via $l$ (with $\epsilon$-transitions). 
     \end{itemize}
   \end{frame}
-
 
   \begin{frame}[fragile]
     \frametitle{Haskell Implementation}
@@ -222,14 +234,55 @@ fromTransNA ntrans sym set = result
 
 
 \section{Regular Expressions}
-\begin{frame}{What is a regular expression?}
-it's a cool guy
+\begin{frame}[fragile]{What is a regular expression?}
+
+  A ``finite representation'' of a potentially infinite language:
+
+  \begin{code}
+data Regex l = Empty | 
+               Epsilon |
+               L l | 
+               Alt (Regex l) (Regex l) |
+               Seq (Regex l) (Regex l) |
+               Star (Regex l)
+  deriving (Eq, Show)
+  \end{code} \vspace{1em}
+  \textbf{N.B.} not the same as the commonly known, ``programmer's'' regular expression!
+
 \end{frame}
-\begin{frame}{Implementing semantics}
-basic stuff here
+
+\begin{frame}[fragile]{Implementing semantics}
+
+  How to check if a word is in the language described by a \texttt{Regex}?
+
+  \begin{code}
+regexAccept :: Eq l => Regex l -> [l] -> Bool
+-- the empty language accepts no words
+regexAccept Empty _    = False
+-- if down to empty string, only accept empty word
+regexAccept Epsilon [] = True  
+regexAccept Epsilon _  = False
+-- if down to a single letter, only accept that letter 
+regexAccept (L _) []   = False
+regexAccept (L l) [c]  = l == c
+regexAccept (L _) _    = False
+regexAccept (Alt r r') cs =
+                 regexAccept r cs || regexAccept r' cs
+...
+\end{code} \vspace
+
+These cases are not so bad!
 \end{frame}
-\begin{frame}{\texttt{Seq} and \texttt{Star} cases}
-harder stuff here
+\begin{frame}[fragile]{\texttt{Seq} and \texttt{Star} cases}
+\begin{code}
+regexAccept (Seq r r') cs = any (regexAccept r' . snd)
+                                (initCheck r cs)
+regexAccept (Star _) [] = True
+regexAccept (Star r) cs = 
+  any (regexAccept (Star r) . snd) $ ignoreEmpty $ initCheck r cs
+  where ignoreEmpty = if regexAccept r [] then init else id 
+
+\end{code}
 \end{frame}
 
 

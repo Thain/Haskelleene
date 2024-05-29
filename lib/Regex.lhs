@@ -110,13 +110,13 @@ regexAccept Epsilon _  = False
 regexAccept (L _) []   = False
 regexAccept (L l) [c]  = l == c
 regexAccept (L _) _ = False
+regexAccept (Alt r r') cs = regexAccept r cs || regexAccept r' cs
 -- optimisations for simple sequences (one part is just a letter)
 regexAccept (Seq (L _) _) [] = False
 regexAccept (Seq _ (L _)) [] = False
 regexAccept (Seq (L l) r) (c:cs) = l == c && regexAccept r cs 
 regexAccept (Seq r (L l)) cs = last cs == l && regexAccept r (init cs)
 regexAccept (Seq Epsilon r) cs = regexAccept r cs
-regexAccept (Alt r r') cs = regexAccept r cs || regexAccept r' cs
 regexAccept (Seq r r') cs = any (regexAccept r' . snd) $ initCheck r cs
 regexAccept (Star _) [] = True
 regexAccept (Star r) cs = 
