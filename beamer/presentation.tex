@@ -2,19 +2,20 @@
 \input{prelude.tex}
 \UseRawInputEncoding
 
-\title{What do Mathematicians Think, Really?}
-\author{Liam Chung}
-\date{30th May, 2024}
+\title{Haskelleene}
+\subtitle{a very Haskell implmentation of automata, \\ regular expressions, and Kleene's algorithm}
+\author{Liam Chung, Brendan Dufty, Lingyuan Ye}
+\date{31st May, 2024}
 
 \AtBeginSection[] {
 \begin{frame}{Table of Contents}
 \begin{columns}[t]
-    \begin{column}{.5\textwidth}
-        \tableofcontents[sections={1-4}, currentsection, hideallsubsections]
-    \end{column}
-    \begin{column}{.5\textwidth}
-        \tableofcontents[sections={5-8}, currentsection, hideallsubsections]
-    \end{column}
+ \begin{column}{.5\textwidth}
+     \tableofcontents[sections={1-4}, currentsection, hideallsubsections]
+ \end{column}
+ \begin{column}{.5\textwidth}
+     \tableofcontents[sections={5-8}, currentsection, hideallsubsections]
+ \end{column}
 \end{columns}
 \end{frame}
 }
@@ -24,40 +25,89 @@
 
 \begin{frame}{Table of Contents}
 \begin{columns}[t]
-    \begin{column}{.5\textwidth}
-        \tableofcontents[sections={1-4}, hideallsubsections]
-    \end{column}
-    \begin{column}{.5\textwidth}
-        \tableofcontents[sections={5-8}, hideallsubsections]
-    \end{column}
+ \begin{column}{.5\textwidth}
+     \tableofcontents[sections={1-4}, hideallsubsections]
+ \end{column}
+ \begin{column}{.5\textwidth}
+     \tableofcontents[sections={5-8}, hideallsubsections]
+ \end{column}
 \end{columns}
 \end{frame}
 
 \section{Introduction}
-    \begin{frame}{Introduction}
-        \begin{quote}
-            "Automata are pretty cool."
-        \end{quote}
-        - Liam Chung
-    \end{frame}
+\begin{frame}{Introduction}
+    \begin{quote}
+        "Automata are pretty cool."
+    \end{quote}
+    - Liam Chung
+\end{frame}
 
-\section{Motivation}
-    \begin{frame}{Motivation: What Do We Do These Things That We Do?}
-      this is some test that is gonna go here to talk about why we do be doing things that we do be doing
-    \end{frame}
-    \begin{frame}{Motivation: more stuff?}
-      look at this this is more stuff that we do
+\section{Automata}
 
-      wanna see a trick?
+\begin{frame}[fragile]{What is an automaton?}
+An basic version of a state machine. It takes inputs from some \emph{alphabet}, moving between \emph{states} that may or may not \emph{accept}. 
+  \begin{verbatim}
+  data DetAut l s = DA { states :: [s]
+                       , accept :: [s]
+                       , delta  :: l -> s -> s }
 
-      check this out: \pause $\smiley$
-    \end{frame}
+  data NDetAut l s = NA { nstates :: [s]
+                        , naccept :: [s]
+                        , ndelta :: Maybe l -> s -> [s] }
+  \end{verbatim}\pause
+  \[\begin{tikzcd}
+  	1 & 2^{\star}
+  	\arrow["b", from=1-1, to=1-1, loop, in=150, out=210, distance=5mm]
+  	\arrow["a", curve={height=-6pt}, from=1-1, to=1-2]
+  	\arrow["b", curve={height=-6pt}, from=1-2, to=1-1]
+  	\arrow["a", from=1-2, to=1-2, loop, in=330, out=30, distance=5mm]
+      \end{tikzcd}\]\pause
+    \textbf{How do we encode \texttt{delta}?}
+\end{frame}
+
+\begin{frame}[fragile]{Automaton data: \texttt{AutData}}
+  A simpler representation of our data:
+  \begin{verbatim}
+  type TDict l s = [(s, [(Maybe l, s)])]
+  data AutData l s = AD { stateData :: [s] 
+                        , acceptData :: [s] 
+                        , transitionData :: TDict l s }
+  \end{verbatim}
+  Then, encode this data into our nicer types. \\ \pause
+  Need to check if data is safe for DAs! \textbf{How?}
+\end{frame}
+\begin{frame}{The \texttt{Alphabet}}
+\end{frame}
+\begin{frame}{Implementing semantics}
+\end{frame}
+
+\section{Non-deterministic Automata}
+\begin{frame}{What is a non-deterministic automaton?}
+\end{frame}
+\begin{frame}{Implementing semantics}
+\end{frame}
+\begin{frame}{The power set construction}
+\end{frame}
+
+\section{Regular Expressions}
+\begin{frame}{What is a regular expression?}
+\end{frame}
+\begin{frame}{Implementing semantics}
+\end{frame}
+\begin{frame}{\texttt{Seq} and \texttt{Star} cases}
+\end{frame}
 
 \section{Kleene's Theorem}
-    \begin{frame}{The Theorem}
-      \begin{theorem}
-        a theorem go here?
-      \end{theorem}
-    \end{frame}
+\begin{frame}{Kleene's Theorem}
+  \begin{theorem}
+    The following are equivalent, for a language $l \in \mathcal{P}(X)$:
+    \begin{itemize}
+      \item it is represented by a state in a finite DA\pause
+      \item it is represented by a state in a finite NA\pause
+      \item it is represented by a regular expression\pause
+    \end{itemize}
+    in such a case, the language $l$ is called \textbf{regular}.
+  \end{theorem}
+\end{frame}
 
 \end{document}
