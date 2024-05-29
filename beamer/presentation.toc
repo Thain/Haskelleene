@@ -1,3 +1,0 @@
-\beamer@sectionintoc {1}{Introduction}{3}{0}{1}
-\beamer@sectionintoc {2}{Motivation}{5}{0}{2}
-\beamer@sectionintoc {3}{Kleene's Theorem}{9}{0}{3}
