@@ -23,15 +23,15 @@ data AutData l s = AD { stateData :: [s]
                       , acceptData :: [s] 
                       , transitionData :: TDict l s }
 
-pPrintAD :: (Alphabet l, Show s, Eq l, Eq s) => (AutData l s) -> String
+pPrintAD :: (Show l, Show s, Eq l, Eq s) => AutData l s -> String
 pPrintAD ad = unlines $ ["States:" ++ showSts ad (stateData ad),"","Transitions:"]
-                         ++ (concat . map transitions . transitionData) ad where
-    showSts d = foldr (\s -> \l -> " " ++ show s ++ isAccept s d ++ l) ""
+                         ++ (concatMap transitions . transitionData) ad where
+    showSts d = foldr (\s l -> " " ++ show s ++ isAccept s d ++ l) ""
     isAccept s d = if s `elem` acceptData d then "*" else ""
     transitions (s,trs) = map (stTrs s) trs
     stTrs s t = show s ++ " --" ++ letter ++ "> " ++ output where
-      letter | (fst t) == Nothing = "Em"
-             | otherwise = (pPrintLetter . fromJust . fst) t ++ "-"
+      letter | isNothing (fst t) = "Em"
+             | otherwise = (show . fromJust . fst) t ++ "-"
       output = show $ snd t
 \end{code}
 
@@ -74,9 +74,9 @@ encodeDA d | not $ detCheck d = Nothing
                                    , accept = acceptData d
                                    , delta = safeDelta } where
     tData = transitionData d
-    safeDelta ltr st = (fromJust . (lookup (Just ltr)) . fromJust . (lookup st)) tData      -- convert data to delta function
+    safeDelta ltr st = (fromJust . lookup (Just ltr) . fromJust . lookup st) tData      -- convert data to delta function
     detCheck ad = length (fst <$> tData) == length (stateData ad) && allUnq (fst <$> tData) -- all states are in transitionData exactly once
-               && all detCheckTr (snd <$> tData) where    -- check transitions for each letter exactly once
+               && all (detCheckTr . snd) tData
     detCheckTr trs = notElem Nothing (fst <$> trs)        -- no empty transitions
                      && alphIter (fromJust . fst <$> trs) -- transition set is exactly the alphabet
 \end{code}

@@ -42,7 +42,12 @@
     - Liam Chung
 \end{frame}
 
-\section{Automata}
+    \begin{frame}{Motivation: What Do We Do These Things That We Do?}
+      this is some test that is gonna go here to talk about why we do be doing things that we do be doing
+    \end{frame}
+
+    \begin{frame}{Motivation: more stuff?}
+      look at this this is more stuff that we do
 
 \begin{frame}[fragile]{What is an automaton?}
 An basic version of a state machine. It takes inputs from some \emph{alphabet}, moving between \emph{states} that may or may not \emph{accept}. 
@@ -96,6 +101,191 @@ An basic version of a state machine. It takes inputs from some \emph{alphabet}, 
 \end{frame}
 \begin{frame}{\texttt{Seq} and \texttt{Star} cases}
 \end{frame}
+
+\section{Finite Automata}
+  \begin{frame}
+    \frametitle{Deterministic Automata}
+
+  \end{frame}
+
+  \begin{frame}[fragile]
+    \frametitle{Non-Deterministic Automata}
+    For non-deterministic automata (NA), the transition for an input gives a \emph{list} of next states, and we also allow empty input. \pause
+    
+    For instance, the following represents a NA:
+    \[
+      \begin{tikzcd}
+        1 & 2 \\
+        3 & 4
+        \arrow["\epsilon"{description}, shift left=2, from=1-1, to=1-2]
+        \arrow["b"{description}, from=1-1, to=2-1]
+        \arrow["c"{description}, shift left=2, from=1-2, to=1-1]
+        \arrow["b"{description}, from=1-2, to=1-2, loop, in=60, out=120, distance=5mm]
+        \arrow["a"{description}, from=1-2, to=2-1]
+        \arrow["\epsilon"{description}, from=1-2, to=2-2] 
+      \end{tikzcd}
+    \]
+    \vspace{-\baselineskip} \pause
+
+    Our Haskell implementation of the type of NA:
+    \begin{showCode}
+data NDetAut l s = NA { nstates :: [s]
+                      , naccept :: [s]
+                      , ndelta :: Maybe l -> s -> [s] }
+    \end{showCode}
+  \end{frame}
+
+  \begin{frame}[fragile]
+    \frametitle{Semantics of Non-Deterministic Automata}
+    \begin{definition}
+      A NA accepts an input string $u$ if there is a \emph{possible} path that terminates at an accepting state.
+    \end{definition} \pause
+
+    Suppose the initial state is 1, and the only accepting state is 4:
+    \[
+      \begin{tikzcd}
+        1 & 2 \\
+        3 & {\color{red} 4}
+        \arrow["\epsilon"{description}, shift left=2, from=1-1, to=1-2]
+        \arrow["b"{description}, from=1-1, to=2-1]
+        \arrow["c"{description}, shift left=2, from=1-2, to=1-1]
+        \arrow["b"{description}, from=1-2, to=1-2, loop, in=60, out=120, distance=5mm]
+        \arrow["a"{description}, from=1-2, to=2-1]
+        \arrow["\epsilon"{description}, from=1-2, to=2-2] 
+      \end{tikzcd}
+    \]
+    Then this NA accepts 
+    \[ \epsilon, b, c, bc, \cdots \]
+  \end{frame}
+
+  \begin{frame}[fragile]
+    \frametitle{Algorithm for Running NA}
+    \begin{block}{General Idea}
+      Searching paths in a finite graph in general requires a lot of computational resources. However, we do not need to output the whole path, thus we only keep track of how states transform.
+    \end{block}\pause
+
+    \only<+>{
+      Say we run the input $ba$ on the previous example:
+      \[
+        \begin{tikzcd}[ampersand replacement = \&]
+          {\color{green} 1} \& 2 \\
+          3 \& 4
+          \arrow["\epsilon"{description}, shift left=2, from=1-1, to=1-2]
+          \arrow["b"{description}, from=1-1, to=2-1]
+          \arrow["c"{description}, shift left=2, from=1-2, to=1-1]
+          \arrow["b"{description}, from=1-2, to=1-2, loop, in=60, out=120, distance=5mm]
+          \arrow["a"{description}, from=1-2, to=2-1]
+          \arrow["\epsilon"{description}, from=1-2, to=2-2] 
+        \end{tikzcd}
+      \]
+      Active states: $([ba],1)$. 
+    }
+    \only<+>{
+      Say we run the input $ba$ on the previous example:
+      \[
+        \begin{tikzcd}[ampersand replacement = \&]
+          1 \& {\color{green}2} \\
+          {\color{green}3} \& 4
+          \arrow["\epsilon"{description}, shift left=2, from=1-1, to=1-2]
+          \arrow["b"{description}, from=1-1, to=2-1]
+          \arrow["c"{description}, shift left=2, from=1-2, to=1-1]
+          \arrow["b"{description}, from=1-2, to=1-2, loop, in=60, out=120, distance=5mm]
+          \arrow["a"{description}, from=1-2, to=2-1]
+          \arrow["\epsilon"{description}, from=1-2, to=2-2] 
+        \end{tikzcd}
+      \]
+      Active states: $([a],3),([ba],2)$. 
+    }
+    \only<+>{
+      Say we run the input $ba$ on the previous example:
+      \[
+        \begin{tikzcd}[ampersand replacement = \&]
+          1 \& {\color{green}2} \\
+          {\color{green}3} \& {\color{green}4}
+          \arrow["\epsilon"{description}, shift left=2, from=1-1, to=1-2]
+          \arrow["b"{description}, from=1-1, to=2-1]
+          \arrow["c"{description}, shift left=2, from=1-2, to=1-1]
+          \arrow["b"{description}, from=1-2, to=1-2, loop, in=60, out=120, distance=5mm]
+          \arrow["a"{description}, from=1-2, to=2-1]
+          \arrow["\epsilon"{description}, from=1-2, to=2-2] 
+        \end{tikzcd}
+      \]
+      Active states: $([a],3),([a],2),([ba],4)$.
+    }
+    \only<+>{
+      Say we run the input $bca$ on the previous example:
+      \[
+        \begin{tikzcd}[ampersand replacement = \&]
+          1 \& 2 \\
+          {\color{green}3} \& {\color{green}4}
+          \arrow["\epsilon"{description}, shift left=2, from=1-1, to=1-2]
+          \arrow["b"{description}, from=1-1, to=2-1]
+          \arrow["c"{description}, shift left=2, from=1-2, to=1-1]
+          \arrow["b"{description}, from=1-2, to=1-2, loop, in=60, out=120, distance=5mm]
+          \arrow["a"{description}, from=1-2, to=2-1]
+          \arrow["\epsilon"{description}, from=1-2, to=2-2] 
+        \end{tikzcd}
+      \]
+      Active states: $([a],3),{\color{red}([],3)},([a],4),([ba],4)$.
+    }
+  \end{frame}
+  
+  \begin{frame}[fragile]
+    \frametitle{Haskell Implementation of Semantics for NA}
+    The function \texttt{runNA} is defined as follows:
+    \begin{code}
+runNA :: (Alphabet l, Ord s) => 
+         NDetAut l s  -> s -> [l] -> [([l], s)]
+runNA na st input = 
+  case input of
+    [] -> ([],) <$> epReachable (ndelta na) st
+    (w:ws) -> concatMap (\s -> runNA na s input) nsucc ++
+              case wsucc of
+                [] -> [(input,st)]
+                ls -> concatMap (\s -> runNA na s ws) ls
+      where wsucc = ndelta na (Just w) st
+    where   nsucc = ndelta na Nothing  st
+    \end{code}
+    Here the function \texttt{epReachable} calculates all the states that is reachable from the current state via $\epsilon$-transitions.
+  \end{frame}
+
+  \begin{frame}[fragile]
+    \frametitle{Equivalence between DA and NA}
+    Evidently, any DA is a NA. On the other hand, we can simulate running NA deterministically, basically via the same idea as \texttt{runNA}:
+
+    \begin{itemize}
+      \item States are subsets of states of a NA.
+      \item A subset is accepting iff it contains some accepting state.
+      \item Under an input $l$, a subset transforms to those states reachable from some state via $l$ (with $\epsilon$-transitions). 
+    \end{itemize}
+  \end{frame}
+
+
+  \begin{frame}[fragile]
+    \frametitle{Haskell Implementation}
+    \begin{code}
+fromNA :: (Alphabet l, Ord s) => 
+          NDetAut l s -> DetAut l (Set.Set s)
+fromNA nda = DA { states = Set.toList dasts
+                , accept = Set.toList $ Set.filter acchelp dasts
+                , delta = fromTransNA ntrans
+                }
+  where ndasts = nstates nda
+        dasts  = Set.powerSet $ Set.fromList ndasts
+        ndaacc = naccept nda
+        acchelp set = not $ Set.disjoint set 
+                          $ Set.fromList ndaacc
+        ntrans = ndelta nda
+
+fromTransNA :: (Alphabet l, Ord s) => 
+               (Maybe l -> s -> [s]) -> l -> Set.Set s -> Set.Set s
+fromTransNA ntrans sym set = result
+  where starts = listUnions (epReachable ntrans) set
+        step = listUnions (ntrans $ Just sym) starts
+        result = listUnions (epReachable ntrans) step
+        listUnions f input = Set.unions $ Set.map Set.fromList $ Set.map f input
+    \end{code}
+  \end{frame}
 
 \section{Kleene's Theorem}
 \begin{frame}{Kleene's Theorem}

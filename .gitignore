@@ -35,3 +35,11 @@ report.blg
 .DS_Store
 *.toc
 *.log
+beamer/*.log
+beamer/*.fls
+beamer/*.log
+beamer/*.nav
+beamer/*.fdb_latexmk
+beamer/*.synctex.gz
+beamer/*.toc
+beamer/*.vrb
