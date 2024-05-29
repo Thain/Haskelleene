@@ -143,37 +143,8 @@ myNAutData = AD [1,2,3,4]         -- the states
 myNDA :: NDetAut Letter Int
 myNDA = encodeNA myNAutData
 \end{code}
-
-Again, some simple cases to ensure basic performance:
-
-\begin{code}
-myNInputsTrue, myNInputsFalse :: [Letter]
-myNInputsFalse = [B,B,A] -- should reject
-myNInputsTrue = []       -- should accept 
-
-myNTestRunFalse :: ([([Letter],Int)],Bool)
-myNTestRunFalse = (filist,result)
-  where filist = runNA myNDA 1 myNInputsFalse
-        result = ndautAccept myNDA 1 myNInputsFalse
-
-myNTestRunTrue :: ([([Letter],Int)],Bool)
-myNTestRunTrue = (filist,result)
-  where filist = runNA myNDA 1 myNInputsTrue
-        result = ndautAccept myNDA 1 myNInputsTrue
-\end{code}
-
-Using the Kleene algorithm in Section~\ref{sec:Kleene}, we should be able to transform the non-deterministic automaton, and one of its states, into a regular expression.
-
-\begin{code}
-myNDAtoReg :: Regex Letter
-myNDAtoReg = autToReg (decode myNDA, 1)
-\end{code}
-
-Here are also some examples for regular expressions:
+Here are is an example for regular expressions:
 \begin{code}
 exampleRegex :: Regex Letter
 exampleRegex = Star (Alt (L A) (L B))
-
-annoyingRegex :: Regex Letter
-annoyingRegex = Alt Empty (Seq Epsilon (L A))
 \end{code}

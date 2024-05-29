@@ -51,10 +51,6 @@ data DetAut  l s = DA { states :: [s]
 A consequence of using the same data type (\texttt{AutData}) to encode both deterministic and non-deterministic automata is that we need to check whether the given data properly defines an automaton of either type. The following are some useful utility functions to check whether the given transition table has certain properties:
 
 \begin{code}
--- given transitionData, an input state, and input letter, output all possible input/output pairs.
-getTrs :: (Eq a, Eq b) => [(a,[(b,a)])] -> a -> b -> [(b,a)]
-getTrs allTrs s0 ltr = filter (\x -> fst x == ltr) $ filter (\x -> fst x == s0) allTrs >>= snd
-
 -- intended to be used as aut `trsOf` s, to see what transitions s has in aut
 trsOf :: Eq s => AutData l s -> s -> [(Maybe l, s)]
 trsOf aut s 
