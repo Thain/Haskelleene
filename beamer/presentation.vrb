@@ -1,23 +1,18 @@
-\frametitle{Haskell Implementation}
-    \begin{code}
-fromNA :: (Alphabet l, Ord s) =>
-          NDetAut l s -> DetAut l (Set.Set s)
-fromNA nda = DA { states = Set.toList dasts
-                , accept = Set.toList $ Set.filter acchelp dasts
-                , delta = fromTransNA ntrans
-                }
-  where ndasts = nstates nda
-        dasts  = Set.powerSet $ Set.fromList ndasts
-        ndaacc = naccept nda
-        acchelp set = not $ Set.disjoint set
-                          $ Set.fromList ndaacc
-        ntrans = ndelta nda
-
-fromTransNA :: (Alphabet l, Ord s) =>
-               (Maybe l -> s -> [s]) -> l -> Set.Set s -> Set.Set s
-fromTransNA ntrans sym set = result
-  where starts = listUnions (epReachable ntrans) set
-        step = listUnions (ntrans $ Just sym) starts
-        result = listUnions (epReachable ntrans) step
-        listUnions f input = Set.unions $ Set.map Set.fromList $ Set.map f input
-    \end{code}
+\frametitle{Implementation}
+\large
+   		\begin{center}Need to relabel an automata onto integers
+   		\end{center}
+   		\begin{code}
+   			
+relabelHelp :: Ord s => AutData l s -> s -> Int
+relabelHelp aut s = fromJust (Map.lookup s (Map.fromList $ zip (stateData aut) [0..(length (stateData aut))]))
+   			
+relabelAut :: Ord s => (AutData l s, s) -> RgxAutData l
+relabelAut (aut, s1) = (AD
+   [relabelHelp aut s | s <- stateData aut]
+   [relabelHelp aut s| s<- acceptData aut]
+   [(relabelHelp aut s, [ (a, relabelHelp aut b)| (a,b) <- aut `transOf` s] ) | s<- stateData aut]
+   ,relabelHelp aut s1)
+   			
+   		\end{code}
+   		

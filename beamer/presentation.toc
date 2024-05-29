@@ -1,3 +1,2 @@
 \beamer@sectionintoc {1}{Introduction}{3}{0}{1}
-\beamer@sectionintoc {2}{Finite Automata}{8}{0}{2}
-\beamer@sectionintoc {3}{Kleene's Theorem}{23}{0}{3}
+\beamer@sectionintoc {2}{Kleene's Theorem}{5}{0}{2}
