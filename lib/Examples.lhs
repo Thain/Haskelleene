@@ -19,12 +19,9 @@ import Automata
       encodeDA,
       run,
       acceptDA,
-      encodeNA,
-      decode,
-      runNA,
-      ndautAccept )
+      encodeNA, )
 import Regex ( Regex(..) )
-import Kleene ( autToReg, dautToReg )
+import Kleene ( dautToReg )
 import Data.Maybe ( fromJust )
 \end{code}
 

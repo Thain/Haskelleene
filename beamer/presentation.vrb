@@ -1,0 +1,23 @@
+\frametitle{Haskell Implementation}
+    \begin{code}
+fromNA :: (Alphabet l, Ord s) =>
+          NDetAut l s -> DetAut l (Set.Set s)
+fromNA nda = DA { states = Set.toList dasts
+                , accept = Set.toList $ Set.filter acchelp dasts
+                , delta = fromTransNA ntrans
+                }
+  where ndasts = nstates nda
+        dasts  = Set.powerSet $ Set.fromList ndasts
+        ndaacc = naccept nda
+        acchelp set = not $ Set.disjoint set
+                          $ Set.fromList ndaacc
+        ntrans = ndelta nda
+
+fromTransNA :: (Alphabet l, Ord s) =>
+               (Maybe l -> s -> [s]) -> l -> Set.Set s -> Set.Set s
+fromTransNA ntrans sym set = result
+  where starts = listUnions (epReachable ntrans) set
+        step = listUnions (ntrans $ Just sym) starts
+        result = listUnions (epReachable ntrans) step
+        listUnions f input = Set.unions $ Set.map Set.fromList $ Set.map f input
+    \end{code}
