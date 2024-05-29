@@ -42,6 +42,7 @@
     - Liam Chung
 \end{frame}
 
+\section{Finite Automata}
 \begin{frame}[fragile]{What is an automaton?}
 An basic version of a state machine. It takes inputs from some \emph{alphabet}, moving between \emph{states} that may or may not \emph{accept}. 
   \begin{verbatim}
@@ -52,7 +53,18 @@ An basic version of a state machine. It takes inputs from some \emph{alphabet}, 
   data NDetAut l s = NA { nstates :: [s]
                         , naccept :: [s]
                         , ndelta :: Maybe l -> s -> [s] }
-  \end{verbatim}\pause
+\end{verbatim}\pause
+\begin{itemize}
+\item a state in a deterministic automaton accepts a word if that words leads to an accepting state. \pause
+
+\item a state in a non-deterministic automaton accepts a word if \emph{there exists a path} to an accepting state.
+
+\end{itemize}
+\end{frame}
+
+  \begin{frame}[fragile]
+    \frametitle{Examples}
+  A deterministic automaton:
   \[\begin{tikzcd}
   	1 & 2^{\star}
   	\arrow["b", from=1-1, to=1-1, loop, in=150, out=210, distance=5mm]
@@ -60,52 +72,7 @@ An basic version of a state machine. It takes inputs from some \emph{alphabet}, 
   	\arrow["b", curve={height=-6pt}, from=1-2, to=1-1]
   	\arrow["a", from=1-2, to=1-2, loop, in=330, out=30, distance=5mm]
       \end{tikzcd}\]\pause
-    \textbf{How do we encode \texttt{delta}?}
-\end{frame}
-
-\begin{frame}[fragile]{Automaton data: \texttt{AutData}}
-  A simpler representation of our data:
-  \begin{verbatim}
-  type TDict l s = [(s, [(Maybe l, s)])]
-  data AutData l s = AD { stateData :: [s] 
-                        , acceptData :: [s] 
-                        , transitionData :: TDict l s }
-  \end{verbatim}
-  Then, encode this data into our nicer types. \\ \pause
-  Need to check if data is safe for DAs! \textbf{How?}
-\end{frame}
-\begin{frame}{The \texttt{Alphabet}}
-\end{frame}
-\begin{frame}{Implementing semantics}
-\end{frame}
-
-\section{Non-deterministic Automata}
-\begin{frame}{What is a non-deterministic automaton?}
-\end{frame}
-\begin{frame}{Implementing semantics}
-\end{frame}
-\begin{frame}{The power set construction}
-\end{frame}
-
-\section{Regular Expressions}
-\begin{frame}{What is a regular expression?}
-\end{frame}
-\begin{frame}{Implementing semantics}
-\end{frame}
-\begin{frame}{\texttt{Seq} and \texttt{Star} cases}
-\end{frame}
-
-\section{Finite Automata}
-  \begin{frame}
-    \frametitle{Deterministic Automata}
-
-  \end{frame}
-
-  \begin{frame}[fragile]
-    \frametitle{Non-Deterministic Automata}
-    For non-deterministic automata (NA), the transition for an input gives a \emph{list} of next states, and we also allow empty input. \pause
-    
-    For instance, the following represents a NA:
+  A non-deterministic one:
     \[
       \begin{tikzcd}
         1 & 2 \\
@@ -118,39 +85,12 @@ An basic version of a state machine. It takes inputs from some \emph{alphabet}, 
         \arrow["\epsilon"{description}, from=1-2, to=2-2] 
       \end{tikzcd}
     \]
-    \vspace{-\baselineskip} \pause
-
-    Our Haskell implementation of the type of NA:
-    \begin{showCode}
-data NDetAut l s = NA { nstates :: [s]
-                      , naccept :: [s]
-                      , ndelta :: Maybe l -> s -> [s] }
-    \end{showCode}
   \end{frame}
 
-  \begin{frame}[fragile]
-    \frametitle{Semantics of Non-Deterministic Automata}
-    \begin{definition}
-      A NA accepts an input string $u$ if there is a \emph{possible} path that terminates at an accepting state.
-    \end{definition} \pause
-
-    Suppose the initial state is 1, and the only accepting state is 4:
-    \[
-      \begin{tikzcd}
-        1 & 2 \\
-        3 & {\color{red} 4}
-        \arrow["\epsilon"{description}, shift left=2, from=1-1, to=1-2]
-        \arrow["b"{description}, from=1-1, to=2-1]
-        \arrow["c"{description}, shift left=2, from=1-2, to=1-1]
-        \arrow["b"{description}, from=1-2, to=1-2, loop, in=60, out=120, distance=5mm]
-        \arrow["a"{description}, from=1-2, to=2-1]
-        \arrow["\epsilon"{description}, from=1-2, to=2-2] 
-      \end{tikzcd}
-    \]
-    Then this NA accepts 
-    \[ \epsilon, b, c, bc, \cdots \]
+  \begin{frame}[fragile]{Algorithm for Running DA}
+this one is pretty easy, can shoot through it
   \end{frame}
-
+  
   \begin{frame}[fragile]
     \frametitle{Algorithm for Running NA}
     \begin{block}{General Idea}
@@ -279,6 +219,19 @@ fromTransNA ntrans sym set = result
         listUnions f input = Set.unions $ Set.map Set.fromList $ Set.map f input
     \end{code}
   \end{frame}
+
+
+\section{Regular Expressions}
+\begin{frame}{What is a regular expression?}
+it's a cool guy
+\end{frame}
+\begin{frame}{Implementing semantics}
+basic stuff here
+\end{frame}
+\begin{frame}{\texttt{Seq} and \texttt{Star} cases}
+harder stuff here
+\end{frame}
+
 
 \section{Kleene's Theorem}
 \begin{frame}{Kleene's Theorem}
