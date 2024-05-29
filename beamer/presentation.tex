@@ -287,16 +287,145 @@ regexAccept (Star r) cs =
 
 
 \section{Kleene's Theorem}
-\begin{frame}{Kleene's Theorem}
-  \begin{theorem}
-    The following are equivalent, for a language $l \in \mathcal{P}(X)$:
-    \begin{itemize}
-      \item it is represented by a state in a finite DA\pause
-      \item it is represented by a state in a finite NA\pause
-      \item it is represented by a regular expression\pause
-    \end{itemize}
-    in such a case, the language $l$ is called \textbf{regular}.
-  \end{theorem}
+\begin{frame}{The Theorem}
+	\large
+	\begin{theorem}
+		Every regular expression corresponds to a non-deterministic automata and vice-versa
+	\end{theorem}
+\end{frame}
+
+\begin{frame}{Regular Expression to Automata}
+	\makebox[\textwidth][c]{
+		\begin{tikzpicture}[
+			onenode/.style={rectangle, draw=blue!60, fill=blue!5, thin, minimum size=7mm},
+			threenode/.style={rectangle, draw=magenta!60, fill=magenta!5, thin, minimum size=5mm},
+			twonode/.style={rectangle, draw=cyan!60, fill=cyan!5, thin, minimum size=5mm},
+			fournode/.style={rectangle, draw=green!60, fill=green!5, thin, minimum size=5mm},
+			]
+			%Nodes
+			\node[onenode]      (one)                              {Regular expression are built inductively};
+			\node[twonode]        (two)       [below=of one] {Define a way to build autmata inductively};
+			\node[threenode]      (three)       [below=of two] {Base Cases};
+			\node[fournode]        (four)       [below=of three] {Each regex constructor $\rightarrow$ a way to nicely \textit{glue} automata together};
+			
+			%Lines
+			\draw[->] (one.south) -- (two.north);
+			\draw[->] (two.south) -- (three.north);
+			\draw[->] (three.south) -- (four.north);
+		\end{tikzpicture}
+	}
+\end{frame}
+
+
+\begin{frame}{Base Cases}
+	\large
+	\begin{enumerate}[]\item \boxed{\texttt{Empty:}} A single non-accepting state.
+		\item \boxed{\texttt{Epsilon:}} A single accepting state. 
+		\item \boxed{\texttt{L a:}} A non-accepting state connected to an accepting one by $a$.
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{Inductive Vibes}
+	\large
+	Given two (one) automata and a regular expression constructor, make a new automaton
+	\begin{enumerate}[]
+		\item \boxed{\texttt{Seq:}} Attach both automata end to end.
+		\item \boxed{\texttt{Alt}} Attach both automata in parralel (with new initial and final states).
+		\item \boxed{\texttt{Star}} Fold the automata in a circle around a new initial/final state.
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{Interesting Implementation}
+	\large
+	\begin{enumerate}[]
+		\item New states $\rightarrow$ consistent labeling $\rightarrow$ primes!
+		\item Epsilon transitions guarantee transition function fidelity (Outputs a NA). 
+		
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{Automata to Regular Expression}
+	\centering \Large
+	
+	Too much to give an understandable dive into the algorithm
+	
+	\vspace{5mm}
+	
+	Summary of algorithm
+	
+	\vspace{5mm}
+	
+	Highlight some implementation
+	
+	\vspace{5mm}
+	
+	Problems and Future Work
+\end{frame}
+
+\begin{frame}{Kleene's Algorithim}
+	\centering\Large
+	Also known as State-Elimination
+	
+	\vspace{5mm}
+	
+	Goal: Recursively deconstruct an automata to get a regex
+	
+	\vspace{5mm}
+	
+	Easy to implement - Haskell likes recursion!
+	
+	\vspace{5mm}
+	
+	Quick Blackboard Example
+	
+\end{frame}
+
+\begin{frame}[fragile]{Implementation}
+	\large
+	\begin{center}Need to relabel an automata onto integers 
+	\end{center}
+	\begin{code}
+		
+		relabelHelp :: Ord s => AutData l s -> s -> Int
+		relabelHelp aut s = fromJust (Map.lookup s (Map.fromList $ zip (stateData aut) [0..(length (stateData aut))]))
+		
+		relabelAut :: Ord s => (AutData l s, s) -> RgxAutData l 
+		relabelAut (aut, s1) = (AD 
+		[relabelHelp aut s | s <- stateData aut] 
+		[relabelHelp aut s| s<- acceptData aut] 
+		[(relabelHelp aut s, [ (a, relabelHelp aut b)| (a,b) <- aut `transOf` s] ) | s<- stateData aut] 
+		,relabelHelp aut s1)
+		
+	\end{code}
+	
+\end{frame}
+
+\begin{frame}{Problems}
+	\centering\Large
+	
+	Outputs highly unsimplified regex - hard to simplify
+	
+	\vspace{5mm}
+	
+	Explodes when converting aut $\rightarrow$regex$\rightarrow$aut or vice-versa
+	
+	\vspace{5mm}
+	
+	VERY SLOW
+\end{frame}
+
+\begin{frame}{Future Work}
+	\centering\Large
+	
+	Construct minimal DA from regex to prove algorithm validates Kleene's Theorem
+	
+	\vspace{5mm}
+	
+	Further simplify regular expressions (commutativity?)
+	
+	\vspace{5mm}
+	
+	Test other algorithms and compare with Kleene's
 \end{frame}
 
 \end{document}
