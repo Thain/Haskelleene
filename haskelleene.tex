@@ -1,0 +1,49 @@
+\documentclass[12pt]{article}
+\input{latexmacros.tex}
+\UseRawInputEncoding
+
+\title{Haskelleene: A Very Haskell Implementation of Regular Expression and
+ Finite Automaton Equivalence}
+\author{Liam Chung, Brendan Dufty, Lingyuan Ye}
+\date{\today}
+\hypersetup{pdfauthor={Me}, pdftitle={My Report}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+In this project, we implement finite (non)deterministic automata and regular expressions, with their corresponding semantics of regular languages. We also implement the conversions between these different structures, including power-set determinisation and Kleene's algorithm. Lastly, we use QuickCheck to verify the behavioural equivalence of automata and regular expressions under these constructions, as stated by Kleene's Theorem.
+\end{abstract}
+
+\vfill
+
+\tableofcontents
+
+\clearpage
+
+% We include one file for each section. The ones containing code shoul
+% be called something.lhs and also mentioned in the .cabal file.
+
+\section{Implementing Automata and Regular Expressions}\label{sec:Defs}
+
+\input{lib/Alphabet.lhs}
+\input{lib/Automata.lhs}
+\input{lib/Regex.lhs}
+
+\section{Kleene's Theorem}\label{sec:Kleene}
+\input{lib/Kleene.lhs}
+
+\section{Testing}\label{sec:Testing}
+
+\input{lib/Examples.lhs}
+% \input{exec/Main.lhs}
+\input{test/simpletests.lhs}
+
+\input{Conclusion.tex}
+
+\addcontentsline{toc}{section}{Bibliography}
+\bibliographystyle{alpha}
+\bibliography{references.bib}
+
+\end{document}

@@ -1,169 +1,95 @@
 #+TITLE: Haskelleene
+#+TODO: T(t) | W(w) D(d)
 
-Final project and report for Functional Programming Course. Implementation of finite automata, regular expressions, and Kleene algebra within Haskell; in particular an algorithm for converting between automata and regular expressions, and vice versa.
+Final project and report for Functional Programming Course. Implementation of deterministic finite automata, non-deterministic finite automata, and regular expressions within Haskell; in particular an algorithm for converting between automata and regular expressions, and vice versa.
 
 * The Plan
 
-For the state implementation, thinking of using a variant of the "turnstile" construction used on the [[https://en.wikibooks.org/wiki/Haskell/Understanding_monads/State][State Monad Haskell wikibooks page]].
+** Core Structures
 
-** Defining things
+These are the core data types that we work with throughout the project. Much of the project is about the well-known equivalence between them, also known as Kleene's Theorem. 
 
-For the time being, all code here is tangling to a sandbox in ~testing.hs~.
+*** AutData
 
-#+begin_src haskell :tangle ./testing.hs
-import Control.Monad.State
-import qualified Control.Category
-#+end_src
+A simple encoding of automaton data, with no restriction on if it is deterministic or not. Essentially for convenience when moving between the different structures.
 
 *** DFAs
 
-Thinking of representing using a State Monad construction. Where an automaton is usually thought of as a set of states, a transition function, and a subset of final states, we will do the following:
-
-We could also maybe use ~StateT~ with the identity monad? We'll definitely want it for NFAs, see below...
-#+begin_src haskell :tangle ./testing.hs
-type AState  = Int -- maybe wrap in constructor
-type Output = Bool -- maybe wrap in constructor
-type Letter = Int  -- maybe wrap in constructor
-
-type DTrans = State AState Output -- StateT with Identity monad
-type NTrans = StateT AState [] Output 
-
--- easy composition of deterministic transitions
-(<.>) :: DTrans -> DTrans -> DTrans
-(<.>) a b = a >>= const b -- ignore the output of the intermediate state
-
--- want to make the above work with this typeclass
--- instance Category DTrans where
-    -- id = StateT $ \s -> (val s, s)
-    -- (.) a b = a >>= const b
-
--- easy shorthand for defining transitions
-l :: (AState -> AState) -> DTrans
-l f = StateT $ \s -> let s' = f s in return (val $ s', s')
-#+end_src
-
-TESTING! 
-#+begin_src haskell :tangle ./testing.hs
--- good for testing
-showRun :: AState -> DTrans -> String
-showRun s t = show $ runState t s
-
-type Valuation = AState -> Output -- could also do set of AState
-
--- for the moment our state set is N, and all states > 10 are accepting
-
-val :: Valuation
-val x = x > 10
-
--- make a plus transition
-p :: Int -> DTrans
-p = \x -> l (+x)
--- pTrans = l $ (+)
-
--- make a subtraction transition
-s :: Int -> DTrans
-s = \x -> l (subtract x)
-
--- big list of transitions
-tlist = [(s 3), (p 2), (p 3), (s 10), (p 19)]
-
--- here's how we can compose em all together
-composed = foldr (<.>) (l id) tlist
-
-test :: String
-test = showRun 9 composed
--- initial state is 9
-#+end_src
-
-An automaton consists of a set of worlds, and a collection of ~DTrans~, one for each letter of our alphabet. We let $l$ 
-#+begin_src haskell :tangle ./testing.hs
-data DetAut l s = DA { states :: [s]
-                     , delta :: l -> DTrans }
-#+end_src
-*One problem I'm having:* how to ensure we only input letters of our alphabet? It feels wrong to encode the automaton, should we work it into the type? I'm not even sure how to do that.
-
-A way of more easily encoding the data of an automaton. Then we can create a "safetyCheck" that if a dataset passes, we encode as a DA.
-#+begin_src haskell :tangle ./testing.hs
-type AutData = ( [AState]                    -- all states
-               , [AState]                    -- accepting states
-               , [(AState, Letter, AState)]) -- transitions
-
--- can it define a deterministic automaton? (totality of transition)
-safetyCheck :: AutData -> Bool
-safetyCheck = undefined
-
--- contingent on passing safetyCheck, make it into a DA
-encodeDA :: AutData -> Maybe DetAut
-encodeDA d | safetyCheck d = Just undefined
-           | otherwise = Nothing
-
--- make it into an NA
--- encodeNA :: AutData -> NDetAut
--- encodeNA = undefined
-#+end_src
+Comprised of a set of states, a subset of accepting states, and a function taking a letter and a state to a new state.
 
 *** NFAs
 
-Should basically just be the same as a DFA, except we trade functions ~s -> (a, s)~ for ~s -> (a, [s])~.
+Similar to a DFA, except it can take a letter to a set of possible output states, or also take nothing to transition from one state to another.
 
-This will require a variant of the State monad for outputting a set of potential states. We can use ~StateT~ with the ~List~ monad, I think.
+*** Regular Expressions
 
-#+begin_src haskell :tangle ./testing.hs
-newtype NDetState s a = NST { run :: s -> [(a, s)] }
+Built using the syntax of Kleene Algebra, used to specify regular expressions. Implemented similarly to propositional logic, but with an even nicer show function.
 
--- s -> [(a,s)]
--- NTrans b = ST $ s -> 
+** Translating Between Structures
 
--- 
--- ~> for transitioning states?
+As stated above, a large part of the project is about being able to encode a regular language as any of a DFA, NFA, or regular expression, equivalently. These functions allow for translating from one of the data types to another in a way that preserves the language specified.
 
-#+end_src
+*** Creating an Automaton from Data (detCheck, encodeDA,encodeNA)
 
-*** regexes
+~detCheck~ is a function checking if a certain set of automaton data can actually specify a deterministic automaton (no empty transitions, transition function is deterministic at every state). If an data set can pass ~detCheck~, then we can encode it as a DFA. For this purpose we have the function ~encodeDA~, which produces an automaton if the data passes ~detCheck~, and ~Nothing~ otherwise.
 
-** Semantics
-*** DFA semantics
+Because all data can be turned into a valid NFA, we have no need for such a check, and so we have the function ~encodeNA~ for turning
 
-*** NFA semantics
+Note that we don't check at any point that the accepting states are a subset of the all states; in such a scenario all "accepting states" not specified as valid states are simply ignored.
 
-*** Regex semantics
+*** Power-set Determinisation (fromNA)
 
-*** QuickCheck Semantics
+We use the well-known power-set construction to turn a NFA into a DFA.
 
-** Translating (Aut <-> Regex)
-*** Power-set Construction
-*** QuickCheck Determinisation Equivalence
+*** Forgetting Determinism (fromDA)
 
-*** "Lift" from DFAs to NFAs
-*** Floyd-Warshall Algorithm (Aut -> Regex)
+Because all DFAs can also be considered NFAs (by just ignoring the determinism requirement), we allow DFAs to be "lifted" directly to NFAs.
 
-A reachability algorithm ([[https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm][wikipedia]]) to determine the shortest paths between vertices in a graph. The plan is to use it to create a regular expression representing a given automaton.
+*** Extracting Data from Automata (decode)
 
-Closely related to Kleene's algorithm ([[https://en.wikipedia.org/wiki/Kleene%27s_algorithm][wikipedia]]) for creating a regular expression from an automaton.
+Our functions for translating between automata and data actually operate on automaton data, as it's much easier to handle tuples/lists than functions in such a setting. Therefore, we have the function ~decode~ to undo the work of encoding an automaton, by turning it into a data set.
 
-*** Going the other way (Regex -> Aut)
+This function operates on NFAs, so to decode a DFA, one can just compose this function with ~fromDA~ to turn it into an NFA.
 
-*** QuickCheck mutual inverses
+*** Kleene's Algorithm (autToReg)
 
-by generating both automata and regexes, and running both constructions in sequence to see if we get an equivalent thing.
+Kleene's Algorithm, closely related to the Floyd-Warshall algorithm for shorted paths in a graph, generates a regular expression given some input automaton.
 
-*** QuickCheck language equivalence
+*** Generating Automata (regToAut)
 
-For a randomly generated automata and the regex it gets, as well as for a regex and the automata it gets.
+Generates an automaton to represent a regular expression.
 
-** Kleene algebra
+** QuickCheck
 
-a proof system for reasoning about equality of regular expressions.
+*** T Encoding
 
-*** Define proof system
+Check if we encode deterministic data as both a DFA and NFA, it should accept the same words.
 
-see Malvin's notes on Tableaux from May 06 lecture.
+*** T Determinisation
 
-* Github actions Telegram bot
+If we determinise an NFA, its determinised version should accept the same words.
 
-using php code from [[https://github.com/jacopo-j/commits-telegram-bot][github]] (needs web hosting)
+*** T Language Equivalence
 
-alternately use [[https://medium.com/@rakshithjayakumar/creating-a-telegram-bot-and-sending-messages-using-github-actions-1c988ad68e9e][this python code]]
+An automaton and the regex it generates should accept the same words. Similarly, some regex and the automaton it generates should accept the same words.
+
+*** T Mutual Inverses 
+
+An automaton, and the output of converting it into a regex and back to an automaton should accept the same words. Similarly with a regex and converting it into an automaton, and back into a regex.
+
+** T Possible Next Things
+
+*** MSO
+Monadic second order logic with successor is equivalent to regex, DFAs, and NFAs,.
+There is an effective transformation between MSO formulas and automata, which we could implement.
+
+*** Kleene Algebra with Hypotheses
+
+Could implement hypothesis closure on automata and regular expression (in a subset of simple cases)
+
+** T Report
+
+A lot of the stuff in this readme can most likely be adapted into the report.
 
 * Notes from template README
 

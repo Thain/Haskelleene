@@ -21,3 +21,17 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
+auto
+haskelleene.fdb*
+haskelleene.out
+haskelleene.aux
+haskelleene.bbl
+haskelleene.blg
+report.fdb*
+report.out
+report.aux
+report.bbl
+report.blg
+.DS_Store
+*.toc
+*.log
