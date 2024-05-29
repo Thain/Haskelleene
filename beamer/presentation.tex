@@ -34,14 +34,6 @@
 \end{columns}
 \end{frame}
 
-\section{Introduction}
-\begin{frame}{Introduction}
-    \begin{quote}
-        "Automata are pretty cool."
-    \end{quote}
-    - Liam Chung
-\end{frame}
-
 \section{Finite Automata}
 \begin{frame}[fragile]{What is an automaton?}
 An basic version of a state machine. It takes inputs from some \emph{alphabet}, moving between \emph{states} that may or may not \emph{accept}. 
@@ -266,35 +258,49 @@ regexAccept Epsilon _  = False
 regexAccept (L _) []   = False
 regexAccept (L l) [c]  = l == c
 regexAccept (L _) _    = False
-regexAccept (Alt r r') cs =
-                 regexAccept r cs || regexAccept r' cs
+regexAccept (Alt r r') w =
+                 regexAccept r w || regexAccept r' w
 ...
-\end{code} \vspace
-
+\end{code} \vspace{1em}
 These cases are not so bad!
 \end{frame}
-\begin{frame}[fragile]{\texttt{Seq} and \texttt{Star} cases}
-\begin{code}
-regexAccept (Seq r r') cs = any (regexAccept r' . snd)
-                                (initCheck r cs)
-regexAccept (Star _) [] = True
-regexAccept (Star r) cs = 
-  any (regexAccept (Star r) . snd) $ ignoreEmpty $ initCheck r cs
-  where ignoreEmpty = if regexAccept r [] then init else id 
 
-\end{code}
+\begin{frame}[fragile]{\texttt{Seq} cases}
+  First, we will need the following:
+\begin{code}
+initCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
+initCheck r w = filter (regexAccept r . fst) (splits w)
+\end{code}\vspace{1em}
+ \ldots which finds all initial segments of the word matching \texttt{r}.
+\begin{code}
+...
+regexAccept (Seq r r') w = any (regexAccept r' . snd)
+                               (initCheck r w)
+...
+\end{code}\vspace{1em}
+For every valid split using \texttt{r}, try \texttt{r'} on the rest.
 \end{frame}
 
+\begin{frame}[fragile]{\texttt{Star} case}
+Similar for \texttt{Star}, with one caveat:
+\begin{code}
+...
+regexAccept (Star r) w = any (regexAccept (Star r) . snd)
+                             (ignoreE (initCheck r w))
+  where ignoreE = if (regexAccept r []) then init else id 
+\end{code}\vspace{1em}
+we need to avoid infinite looping by accepting the empty split!
+\end{frame}
 
 \section{Kleene's Theorem}
 \begin{frame}{The Theorem}
 	\large
 	\begin{theorem}
-		Every regular expression corresponds to a non-deterministic automata and vice-versa
+		Every regular expression corresponds to a non-deterministic automaton and vice-versa
 	\end{theorem}
 \end{frame}
 
-\begin{frame}{Regular Expression to Automata}
+\begin{frame}{Regular Expression to Automaton}
 	\makebox[\textwidth][c]{
 		\begin{tikzpicture}[
 			onenode/.style={rectangle, draw=blue!60, fill=blue!5, thin, minimum size=7mm},
@@ -331,7 +337,7 @@ regexAccept (Star r) cs =
 	\begin{enumerate}[]
 		\item \boxed{\texttt{Seq:}} Attach both automata end to end.
 		\item \boxed{\texttt{Alt}} Attach both automata in parralel (with new initial and final states).
-		\item \boxed{\texttt{Star}} Fold the automata in a circle around a new initial/final state.
+		\item \boxed{\texttt{Star}} Fold the automaton in a circle around a new initial/final state.
 	\end{enumerate}
 \end{frame}
 
@@ -347,34 +353,22 @@ regexAccept (Star r) cs =
 \begin{frame}{Automata to Regular Expression}
 	\centering \Large
 	
-	Too much to give an understandable dive into the algorithm
+	Too much to give an understandable dive into the algorithm\vspace{5mm}
 	
-	\vspace{5mm}
+	Summary of algorithm\vspace{5mm}
 	
-	Summary of algorithm
-	
-	\vspace{5mm}
-	
-	Highlight some implementation
-	
-	\vspace{5mm}
+	Highlight some implementation\vspace{5mm}
 	
 	Problems and Future Work
 \end{frame}
 
 \begin{frame}{Kleene's Algorithim}
 	\centering\Large
-	Also known as State-Elimination
+	Also known as State-Elimination\vspace{5mm}
 	
-	\vspace{5mm}
+	Goal: Recursively deconstruct an automata to get a regex\vspace{5mm}
 	
-	Goal: Recursively deconstruct an automata to get a regex
-	
-	\vspace{5mm}
-	
-	Easy to implement - Haskell likes recursion!
-	
-	\vspace{5mm}
+	Easy to implement - Haskell likes recursion!\vspace{5mm}
 	
 	Quick Blackboard Example
 	
@@ -385,17 +379,15 @@ regexAccept (Star r) cs =
 	\begin{center}Need to relabel an automata onto integers 
 	\end{center}
 	\begin{code}
-		
-		relabelHelp :: Ord s => AutData l s -> s -> Int
-		relabelHelp aut s = fromJust (Map.lookup s (Map.fromList $ zip (stateData aut) [0..(length (stateData aut))]))
-		
-		relabelAut :: Ord s => (AutData l s, s) -> RgxAutData l 
-		relabelAut (aut, s1) = (AD 
-		[relabelHelp aut s | s <- stateData aut] 
-		[relabelHelp aut s| s<- acceptData aut] 
-		[(relabelHelp aut s, [ (a, relabelHelp aut b)| (a,b) <- aut `transOf` s] ) | s<- stateData aut] 
-		,relabelHelp aut s1)
-		
+relabelHelp :: Ord s => AutData l s -> s -> Int
+relabelHelp aut s = fromJust (Map.lookup s (Map.fromList $ zip (stateData aut) [0..(length (stateData aut))]))
+
+relabelAut :: Ord s => (AutData l s, s) -> RgxAutData l 
+relabelAut (aut, s1) = (AD 
+[relabelHelp aut s | s <- stateData aut] 
+[relabelHelp aut s| s<- acceptData aut] 
+[(relabelHelp aut s, [ (a, relabelHelp aut b)| (a,b) <- aut `transOf` s] ) | s<- stateData aut] 
+,relabelHelp aut s1)
 	\end{code}
 	
 \end{frame}
@@ -403,13 +395,9 @@ regexAccept (Star r) cs =
 \begin{frame}{Problems}
 	\centering\Large
 	
-	Outputs highly unsimplified regex - hard to simplify
+	Outputs highly unsimplified regex - hard to simplify\vspace{5mm}
 	
-	\vspace{5mm}
-	
-	Explodes when converting aut $\rightarrow$regex$\rightarrow$aut or vice-versa
-	
-	\vspace{5mm}
+	Explodes when converting aut $\rightarrow$regex$\rightarrow$aut or vice-versa\vspace{5mm}
 	
 	VERY SLOW
 \end{frame}
@@ -417,13 +405,9 @@ regexAccept (Star r) cs =
 \begin{frame}{Future Work}
 	\centering\Large
 	
-	Construct minimal DA from regex to prove algorithm validates Kleene's Theorem
+	Construct minimal DA from regex to prove algorithm validates Kleene's Theorem \vspace{5mm}
 	
-	\vspace{5mm}
-	
-	Further simplify regular expressions (commutativity?)
-	
-	\vspace{5mm}
+	Further simplify regular expressions (commutativity?) \vspace{5mm}
 	
 	Test other algorithms and compare with Kleene's
 \end{frame}

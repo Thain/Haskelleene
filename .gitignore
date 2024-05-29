@@ -43,3 +43,4 @@ beamer/*.fdb_latexmk
 beamer/*.synctex.gz
 beamer/*.toc
 beamer/*.vrb
+beamer/*.snm

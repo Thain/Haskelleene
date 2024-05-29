@@ -23,7 +23,7 @@ data AutData l s = AD { stateData :: [s]
                       , acceptData :: [s] 
                       , transitionData :: TDict l s }
 
-pPrintAD :: (Show l, Show s, Eq l, Eq s) => AutData l s -> String
+pPrintAD :: (Alphabet l, Show s, Eq l, Eq s) => AutData l s -> String
 pPrintAD ad = unlines $ ["States:" ++ showSts ad (stateData ad),"","Transitions:"]
                          ++ (concatMap transitions . transitionData) ad where
     showSts d = foldr (\s l -> " " ++ show s ++ isAccept s d ++ l) ""
@@ -31,7 +31,7 @@ pPrintAD ad = unlines $ ["States:" ++ showSts ad (stateData ad),"","Transitions:
     transitions (s,trs) = map (stTrs s) trs
     stTrs s t = show s ++ " --" ++ letter ++ "> " ++ output where
       letter | isNothing (fst t) = "Em"
-             | otherwise = (show . fromJust . fst) t ++ "-"
+             | otherwise = (pPrintLetter . fromJust . fst) t ++ "-"
       output = show $ snd t
 \end{code}
 
@@ -45,7 +45,7 @@ data DetAut  l s = DA { states :: [s]
                       , delta :: l -> s -> s }
 \end{code}
 
-A consequence of using the same data type (\texttt{AutData}) to encode both deterministic and non-deterministic automata is that we need to check whether the given data properly defines an automaton of either type. The following are some useful utility functions to check whether the given transition table has certain properties:
+A consequence of using the same data type (\texttt{AutData}) to encode both deterministic and non-deterministic automata is that we need to check whether the data defines a deterministic automaton. The following are some useful utility functions to check whether the given transition table has certain properties:
 
 \begin{code}
 -- intended to be used as aut `trsOf` s, to see what transitions s has in aut
@@ -54,7 +54,7 @@ trsOf aut s
   | isNothing $ lookup s $ transitionData aut = []
   | otherwise = fromJust $ lookup s $ transitionData aut
 
--- utility for checking if a list has duplicates
+-- "all unique"
 allUnq:: Eq a => [a] -> Bool
 allUnq = unqHelp [] where
    unqHelp _ [] = True
@@ -64,7 +64,7 @@ appendTuple :: ([a],[b]) -> ([a],[b]) -> ([a],[b])
 appendTuple (l,l') (m,m') = (l++m,l'++m')
 \end{code}
 
-We will then use these functions to check if a set of automaton data can properly encode a deterministic automaton. To access a deterministic automaton from an element of \texttt{AutData}, we need to verify that the given transition table is indeed deterministic, i.e. for any current state, for any given input alphabet there exists a unique output state:
+Now we can encode \texttt{AutData} as a deterministic automaton, so long as the data it describes \emph{can} do so:
 
 \begin{code}
 -- contingent on passing detCheck, turn data into DA
@@ -92,14 +92,51 @@ acceptDA :: (Eq s) => DetAut l s -> s -> [l] -> Bool
 acceptDA da s0 w = run da s0 w `elem` accept da
 \end{code}
 
-We now proceed to implement non-deterministic automata, in a very similar way. The only difference is that the transition function now also accepts empty input, viz. the socalled \emph{$\epsilon$-transitions}, and the result of a transition function is a list of all possible next states. Then, as we did for the deterministic case, provide a way to encode automaton data to an NA. The safety check in this case doesn't need to reject the data outright: the only thing that might create a problem is \texttt{Epsilon} loops or states not having all of their transition data listed in one place. If the data fails the safety check, we can repair it by removing the \texttt{Epsilon} loops and mergin the transition data.
+We now proceed to implement non-deterministic automata, in a very similar way. The only difference is that the transition function now also accepts empty input, viz. the so-called \emph{$\epsilon$-transitions}, and the result of a transition function is a list of all possible next states.
 
 \begin{code}
 data NDetAut l s = NA { nstates :: [s]
                       , naccept :: [s]
                       , ndelta :: Maybe l -> s -> [s] }
 
--- make data into an NA (if data formatted properly, go ahead; otherwise, format it then encode)
+-- all DAs are also NAs: the trivial forgetful functor DA -> NA
+fromDA :: (Alphabet l) => DetAut l s -> NDetAut l s
+fromDA da = NA { nstates = states da
+               , naccept = accept da
+               , ndelta = newDelta } where
+  newDelta Nothing _ = []
+  newDelta (Just l) st = [delta da l st]
+\end{code}
+
+It will be convenient for us to be able to convert \texttt{NDetAut}s back into \texttt{AutData}, as in some contexts working with the explicit data is easier, for example Kleene's algorithm (covered in Section~\ref{sec:Kleene}).
+
+\begin{code}
+decode :: (Alphabet l, Eq s) => NDetAut l s -> AutData l s
+decode nda = AD { stateData = sts
+                  , acceptData = naccept nda
+                  , transitionData = trandata }
+  where sts = nstates nda
+        ntrans = ndelta nda
+        symlist = Nothing : (Just <$> completeList)
+        trandata = graph help sts 
+        help st = concatMap (\sym -> (sym,) <$> ntrans sym st) symlist
+        graph f as = zip as $ f <$> as
+\end{code}
+
+As an aside, we can now actually pretty print both \texttt{DetAut} and \texttt{NDetAut}, by decoding them to \texttt{AutData} and using the pretty print function we defined for that:
+
+\begin{code}
+pPrintNA :: (Alphabet l, Show s, Eq l, Eq s) => NDetAut l s -> String
+pPrintNA = pPrintAD . decode
+
+pPrintDA :: (Alphabet l, Show s, Eq l, Eq s) => DetAut l s -> String
+pPrintDA = pPrintAD . decode . fromDA
+\end{code}
+
+Now we can encode NAs from \texttt{AutData}, and there's no need to fear the data being invalid; though we will want to reformat the data if it's not organised properly, for example listing the potential transitions from a state split into different parts of the \texttt{TDict}. We also ignore $\epsilon$ loops, as they do not alter the behaviour of the automaton and create unnecessary complexities for the semantic algorithm.
+ 
+\begin{code}
+-- make data into an NA (if data formatted properly; otherwise, format then encode)
 encodeNA :: (Alphabet l, Eq s) => AutData l s -> NDetAut l s
 encodeNA d = NA { nstates = stateData d
                 , naccept = acceptData d
@@ -120,19 +157,7 @@ encodeNA d = NA { nstates = stateData d
   propTrs _ [] = ([],[])
   propTrs st (tr:trs) = appendTuple resultTuple (propTrs st trs) where
     resultTuple = if st == fst tr then (snd tr,[]) else ([],[tr])
-                 
--- put an NA back into data, e.g. to turn it into regex
-decode :: (Alphabet l, Eq s) => NDetAut l s -> AutData l s
-decode nda = AD { stateData = sts
-                  , acceptData = naccept nda
-                  , transitionData = trandata }
-  where sts = nstates nda
-        ntrans = ndelta nda
-        symlist = Nothing : (Just <$> completeList)
-        trandata = graph help sts 
-        help st = concatMap (\sym -> (sym,) <$> ntrans sym st) symlist
-        graph f as = zip as $ f <$> as
-\end{code}
+\end{code}                
 
 We end with the semantic layer for non-deterministic automata. The algorithm used for implementing \texttt{runNA} for trasversing an input string on a non-deterministic automaton is inspired by~\cite{web}. Intuitively, we record a list of \emph{active states} at each step of the traversal, with its corresponding remaining list of inputs. If we reach the end of the given input along some path, we terminiate and record it in the output. The function \texttt{ndautAccept} then checks whether there is an output that consumes all the inputs, and terminiates at an accepting state.
 
@@ -156,26 +181,6 @@ ndfinalStates na s0 w = snd <$> runNA na s0 w
 \end{code}
 
 Finally, we implement algorithms to exhibit the behavioural equivalence between deterministic and non-deterministic automata. The easy direction is that, evidently, any deterministic automaton is also a non-deterministic one:
-
-\begin{code}
--- The trivial forgetful functor: DA -> NA
-fromDA :: (Alphabet l) => DetAut l s -> NDetAut l s
-fromDA da = NA { nstates = states da
-               , naccept = accept da
-               , ndelta = newDelta } where
-  newDelta Nothing _ = []
-  newDelta (Just l) st = [delta da l st]
-\end{code}
-
-As an aside, we can now actually create \texttt{Show} instances for both \texttt{DetAut} and \texttt{NDetAut}, but decoding them to \texttt{AutData} and using the pretty print functions we defined:
-
-\begin{code}
-pPrintNA :: (Alphabet l, Show s, Eq l, Eq s) => NDetAut l s -> String
-pPrintNA = pPrintAD . decode
-
-pPrintDA :: (Alphabet l, Show s, Eq l, Eq s) => DetAut l s -> String
-pPrintDA = pPrintAD . decode . fromDA
-\end{code}
 
 Now returning to automaton conversion: the non-trivial direction is that any non-deterministic automaton can also be converted into an equivalent deterministic one. The general idea is simple: We change the set of states to the set of \emph{subsets} of the original non-determinisitic automaton. This way, we may code the non-deterministic behaviour in a deterministic way. The algorithm is inspired by~\cite{book_marcelo}.
 
