@@ -99,7 +99,7 @@ myTestRun = (finalst, result)
         result = acceptDA myDA 1 myInputs
 \end{code}
 
-Let us also consider this example of a non-deterministic automaton:
+Let us also consider this example of a non-deterministic automaton. Note how the data is not formatted properly: transitions from state 1 are not all listed together, and there are unnecessary epsilon loops that will make our implmementation of NA semantics loop. When encoding this automaton, we will fix these formatting issues. TODO REFERENCE, MAYBE SHOW FIXED OUTPUT 
 \[\begin{tikzcd}
 	1 && 2 \\
 	\\
@@ -139,7 +139,7 @@ myNAutData = AD [1,2,3,4]         -- the states
 myNDA :: NDetAut Letter Int
 myNDA = encodeNA myNAutData
 \end{code}
-Here are is an example for regular expressions:
+Here is an example for regular expressions:
 \begin{code}
 exampleRegex :: Regex Letter
 exampleRegex = Star (Alt (L A) (L B))
