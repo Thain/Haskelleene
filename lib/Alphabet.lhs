@@ -10,6 +10,7 @@ import Test.QuickCheck ( elements, Arbitrary(arbitrary) )
 
 class Ord a => Alphabet a where
   completeList :: [a]
+  pPrintLetter :: a -> String
 \end{code}
 
 The reason for this implementation choice is that we can silently pass this recorded list of complete alphabet as input via constraint declarations. We also require any alphabet shall be ordered.
@@ -24,15 +25,13 @@ alphIter l = sort l == completeList
 The main input alphabet we are going to use on testing consists of three letters. This choice is of course not essential to our main implementation, which will be parametric over all type instances of the class \texttt{Alphabet}.
 
 \begin{code}
-data Letter = A | B | C deriving (Eq, Ord)
-
-instance Show Letter where
-  show A = "a"
-  show B = "b"
-  show C = "c"
+data Letter = A | B | C deriving (Eq, Ord, Show)
 
 instance Alphabet Letter where
   completeList = [A,B,C]
+  pPrintLetter A = "a"
+  pPrintLetter B = "b"
+  pPrintLetter C = "c"
 \end{code}
 
 To use the QuickCheck library to test on arbitrary inputs, we also define an instance of \texttt{Arbitrary} for our type \texttt{Letter}:

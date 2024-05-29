@@ -155,7 +155,7 @@ ndfinalStates :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> [s]
 ndfinalStates na s0 w = snd <$> runNA na s0 w
 \end{code}
 
-Finally, we implement an algorithm that exhibits the behavioural equivalence between deterministic and non-deterministic automata. The easy direction is that, evidently, any deterministic automaton is also a non-deterministic one, and they evidently accepts the same language:
+Finally, we implement algorithms to exhibit the behavioural equivalence between deterministic and non-deterministic automata. The easy direction is that, evidently, any deterministic automaton is also a non-deterministic one:
 
 \begin{code}
 -- The trivial forgetful functor: DA -> NA
@@ -167,25 +167,23 @@ fromDA da = NA { nstates = states da
   newDelta (Just l) st = [delta da l st]
 \end{code}
 
-As an aside, we can now actually create \texttt{Show} instances for both \texttt{DetAut} and \texttt{NDetAut}, but decoding them to \texttt{AutData} and using the \texttt{Show} instance we defined for that:
+As an aside, we can now actually create \texttt{Show} instances for both \texttt{DetAut} and \texttt{NDetAut}, but decoding them to \texttt{AutData} and using the pretty print functions we defined:
 
 \begin{code}
-pPrintNA :: (Alphabet l, Show l, Show s, Eq l, Eq s) => NDetAut l s -> String
+pPrintNA :: (Alphabet l, Show s, Eq l, Eq s) => NDetAut l s -> String
 pPrintNA = pPrintAD . decode
 
-pPrintDA :: (Alphabet l, Show l, Show s, Eq l, Eq s) => DetAut l s -> String
+pPrintDA :: (Alphabet l, Show s, Eq l, Eq s) => DetAut l s -> String
 pPrintDA = pPrintAD . decode . fromDA
 \end{code}
 
-Now returning to automaton conversion: the non-trivial direction is that any non-deterministic automaton can also be converted into a deterministic one, with possibly different set of states and transition functions. The general idea is simple: We change the set of states to the set of \emph{subset} of the original non-determinisitic automaton. This way, we may code the non-deterministic behaviour in a deterministic way. The algorithm is inspired by~\cite{book_marcelo}.
+Now returning to automaton conversion: the non-trivial direction is that any non-deterministic automaton can also be converted into an equivalent deterministic one. The general idea is simple: We change the set of states to the set of \emph{subsets} of the original non-determinisitic automaton. This way, we may code the non-deterministic behaviour in a deterministic way. The algorithm is inspired by~\cite{book_marcelo}.
 
 \begin{code}
--- The Power-set Construction: NA -> DA 
 fromNA :: (Alphabet l, Ord s) => NDetAut l s -> DetAut l (Set.Set s)
 fromNA nda = DA { states = Set.toList dasts
                 , accept = Set.toList $ Set.filter acchelp dasts
-                , delta = fromTransNA ntrans
-                }
+                , delta = fromTransNA ntrans }
   where ndasts = nstates nda
         dasts  = Set.powerSet $ Set.fromList ndasts
         ndaacc = naccept nda
@@ -193,11 +191,9 @@ fromNA nda = DA { states = Set.toList dasts
         ntrans = ndelta nda
 
 epReachable :: (Alphabet l, Ord s) => (Maybe l -> s -> [s]) -> s -> [s]
-epReachable ntrans st = st : concatMap (epReachable ntrans) 
-                                       (ntrans Nothing st)
+epReachable ntrans st = st : concatMap (epReachable ntrans) (ntrans Nothing st)
 
-fromTransNA :: (Alphabet l, Ord s) => (Maybe l -> s -> [s]) -> 
-                                      l -> Set.Set s -> Set.Set s
+fromTransNA :: (Alphabet l, Ord s) => (Maybe l -> s -> [s]) -> l -> Set.Set s -> Set.Set s
 fromTransNA ntrans sym set = result
   where starts = listUnions (epReachable ntrans) set
         step = listUnions (ntrans $ Just sym) starts
@@ -209,4 +205,4 @@ fromStartNA nda st = Set.fromList $ epReachable ntrans st
   where ntrans = ndelta nda
 \end{code}
 
-We have tested the behavioural equivalence using the above transitions in Section~\ref{sec:Testing}.
+We test the claimed behavioural equivalence in Section~\ref{sec:Testing}.
