@@ -35,7 +35,7 @@ instance Alphabet Letter where
   completeList = [A,B,C]
 \end{code}
 
-To use the QuickCheck library to test on arbitrary inputs, we also define an instance of \texttt{Arbitrary for our type \texttt{Letter}:
+To use the QuickCheck library to test on arbitrary inputs, we also define an instance of \texttt{Arbitrary} for our type \texttt{Letter}:
 
 \begin{code}
 instance Arbitrary Letter where

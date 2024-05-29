@@ -1,5 +1,3 @@
-\section{Testing}\label{sec:Testing}
-
 \subsection{Examples}\label{subsec:Examples}
 
 In this section we define several examples of (non)deterministic automata and regular expressions, and run tests on them to verify the correctness of our algorithms written earlier. More concretely, we would like to test:
@@ -8,8 +6,6 @@ In this section we define several examples of (non)deterministic automata and re
 \item The conversion between deterministic and non-deterministic automata implemented in Section~\ref{sec:Automata} should be behaviourally equivalent. 
 \item The conversion between (non)deterministic automata and regular expressions implemented in Section~\ref{sec:Kleene} should be behaviourally equivalent.
 \end{itemize}
-
-\subsubsection{Examples of Automata and Regular Expressions}\label{subsubsec:examples}
 
 We begin by including the relevant modules.
 \begin{code}

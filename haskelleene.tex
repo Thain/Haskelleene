@@ -22,17 +22,22 @@ In this project, we implement finite (non)deterministic automata and regular exp
 
 \clearpage
 
-% We include one file for each section. The ones containing code should
+% We include one file for each section. The ones containing code shoul
 % be called something.lhs and also mentioned in the .cabal file.
+
+\section{Implementing Automata and Regular Expressions}\label{sec:Defs}
 
 \input{lib/Alphabet.lhs}
 \input{lib/Automata.lhs}
 \input{lib/Regex.lhs}
+
+\section{Kleene's Theorem}\label{sec:Kleene}
 \input{lib/Kleene.lhs}
+
+\section{Testing}\label{sec:Testing}
+
 \input{lib/Examples.lhs}
-
 % \input{exec/Main.lhs}
-
 \input{test/simpletests.lhs}
 
 \input{Conclusion.tex}

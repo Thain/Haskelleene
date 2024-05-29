@@ -24,21 +24,18 @@ data AutData l s = AD { stateData :: [s]
                       , transitionData :: TDict l s }
 
 pPrintAD :: (Show l, Show s, Eq l, Eq s) => (AutData l s) -> String
-pPrintAD ad = "States:" ++ showSts ad (stateData ad) ++ "\n\nTransitions:" ++ transitions (transitionData ad) where
-    showSts _ [] = ""
-    showSts d (s:ss) = " " ++ show s ++ isAccept s d ++ showSts d ss
+pPrintAD ad = unlines $ ["States:" ++ showSts ad (stateData ad),"","Transitions:"]
+                         ++ (concat . map transitions . transitionData) ad where
+    showSts d = foldr (\s -> \l -> " " ++ show s ++ isAccept s d ++ l) ""
     isAccept s d = if s `elem` acceptData d then "*" else ""
-    transitions [] = ""
-    transitions (t:ts) = "\n" ++ stTrs t ++ transitions ts
-    stTrs (_, []) = ""
-    stTrs (s, (t:ts)) = "\n" ++ show s ++ " --" ++ letter ++ "-> " ++ output ++ stTrs (s,ts) where
-      letter | (fst t) == Nothing = "em"
-             | otherwise = show $ fromJust (fst t)
+    transitions (s,trs) = map (stTrs s) trs
+    stTrs s t = show s ++ " --" ++ letter ++ "> " ++ output where
+      letter | (fst t) == Nothing = "Em"
+             | otherwise = (show . fromJust . fst) t ++ "-"
       output = show $ snd t
 \end{code}
 
-Here \texttt{l} should be thought of as the type of the chosen alphabet, while \texttt{s} is the type of our states. The type \texttt{TDict} then acts as the type of transition tables. A pair in \texttt{TDict} should be thought of recoding the information of given a current state, what are the possible output states of a given input. The fact that we have used \texttt{Maybe l} is that we want the type \texttt{AutData} to be simultaneously able to record both deterministic and non-deterministic automata, thus with the possibility of $\epsilon$-transitions. For some examples of using
- \texttt{AutData} to encode automata, see Section~\ref{subsec:Examples}.
+Here \texttt{l} should be thought of as the type of the chosen alphabet, while \texttt{s} is the type of our states. The type \texttt{TDict} then acts as the type of transition tables. A pair in \texttt{TDict} should be thought of recoding the information of given a current state, what are the possible output states of a given input. The fact that we have used \texttt{Maybe l} is that we want the type \texttt{AutData} to be simultaneously able to record both deterministic and non-deterministic automata, thus with the possibility of $\epsilon$-transitions. For some examples of using \texttt{AutData} to encode automata, see Section~\ref{subsec:Examples}.
 
 As mentioned, the data type of deterministic automata should be defined as follows:
 
@@ -59,10 +56,9 @@ trsOf aut s
 
 -- utility for checking if a list has duplicates
 allUnq:: Eq a => [a] -> Bool
-allUnq = unqHelp []
-    where
-        unqHelp _ [] = True
-        unqHelp seen (x:xs) = notElem x seen && unqHelp (x:seen) xs
+allUnq = unqHelp [] where
+   unqHelp _ [] = True
+   unqHelp seen (x:xs) = notElem x seen && unqHelp (x:seen) xs
 
 appendTuple :: ([a],[b]) -> ([a],[b]) -> ([a],[b])
 appendTuple (l,l') (m,m') = (l++m,l'++m')
@@ -77,23 +73,17 @@ encodeDA d | not $ detCheck d = Nothing
            | otherwise = Just $ DA { states = stateData d
                                    , accept = acceptData d
                                    , delta = safeDelta } where
-    safeDelta ltr st = fromJust $ lookup (Just ltr) $ fromJust (lookup st (transitionData d)) 
-    detCheck ad = length sts == length (stateData ad) && allUnq sts 
-                  -- all states are in transitionData exactly once
-                  && all detCheckTr stateTrs where              
-                  -- check transitions for each letter exactly once
-      sts = fst <$> transitionData ad
-      stateTrs = snd <$> transitionData ad
-    detCheckTr trs = notElem Nothing (fst <$> trs)        
-                     -- no empty transitions
-                     && alphIter (fromJust . fst <$> trs) 
-                     -- transition set is exactly the alphabet
+    tData = transitionData d
+    safeDelta ltr st = (fromJust . (lookup (Just ltr)) . fromJust . (lookup st)) tData      -- convert data to delta function
+    detCheck ad = length (fst <$> tData) == length (stateData ad) && allUnq (fst <$> tData) -- all states are in transitionData exactly once
+               && all detCheckTr (snd <$> tData) where    -- check transitions for each letter exactly once
+    detCheckTr trs = notElem Nothing (fst <$> trs)        -- no empty transitions
+                     && alphIter (fromJust . fst <$> trs) -- transition set is exactly the alphabet
 \end{code}
 
 We end the basic implementation of deterministic automata by providing its semantic layer, i.e. on a given input and an initial state, whether a deterministic automata accept a list of symbols or not. Intuitively, the \texttt{run} function uses the transition function to trasverses an input string on an automaton and output the terminating state. Then \texttt{acceptDA} tests whether the input is accepted by testing whether the terminating state is an accepted state:
 
 \begin{code}
--- takes DA, input letter list, and initial state to output pair
 run :: DetAut l s -> s -> [l] -> s
 run _ s0 [] = s0
 run da s0 (w:ws) = run da (delta da w s0) ws
@@ -102,17 +92,13 @@ acceptDA :: (Eq s) => DetAut l s -> s -> [l] -> Bool
 acceptDA da s0 w = run da s0 w `elem` accept da
 \end{code}
 
-We now proceed to implement non-deterministic automata, in a very similar way. The only difference is that the transition function now also accepts empty input, viz. the socalled \emph{$\epsilon$-transitions}, and the result of a transition function is a list of all possible next states.
+We now proceed to implement non-deterministic automata, in a very similar way. The only difference is that the transition function now also accepts empty input, viz. the socalled \emph{$\epsilon$-transitions}, and the result of a transition function is a list of all possible next states. Then, as we did for the deterministic case, provide a way to encode automaton data to an NA. The safety check in this case doesn't need to reject the data outright: the only thing that might create a problem is \texttt{Epsilon} loops or states not having all of their transition data listed in one place. If the data fails the safety check, we can repair it by removing the \texttt{Epsilon} loops and mergin the transition data.
 
 \begin{code}
 data NDetAut l s = NA { nstates :: [s]
                       , naccept :: [s]
                       , ndelta :: Maybe l -> s -> [s] }
-\end{code}
 
-Completely similarly, we can encode a non-determinisitic automaton from an element of \texttt{AutData}: {\color{red} Maybe say more.}
-
-\begin{code}
 -- make data into an NA (if data formatted properly, go ahead; otherwise, format it then encode)
 encodeNA :: (Alphabet l, Eq s) => AutData l s -> NDetAut l s
 encodeNA d = NA { nstates = stateData d
@@ -135,12 +121,11 @@ encodeNA d = NA { nstates = stateData d
   propTrs st (tr:trs) = appendTuple resultTuple (propTrs st trs) where
     resultTuple = if st == fst tr then (snd tr,[]) else ([],[tr])
                  
--- put an NA back into autdata, e.g. to turn it into regex
+-- put an NA back into data, e.g. to turn it into regex
 decode :: (Alphabet l, Eq s) => NDetAut l s -> AutData l s
 decode nda = AD { stateData = sts
                   , acceptData = naccept nda
-                  , transitionData = trandata
-                  }
+                  , transitionData = trandata }
   where sts = nstates nda
         ntrans = ndelta nda
         symlist = Nothing : (Just <$> completeList)
@@ -149,7 +134,7 @@ decode nda = AD { stateData = sts
         graph f as = zip as $ f <$> as
 \end{code}
 
-We end with the semantic layer for non-deterministic automata. The algorithm used for implementing \texttt{runNA} for trasversing an input string on a non-deterministic automaton is inspired by~\cite{web}. Intuitively, we record a list of \emph{active states} at each step of the trasversal, with its corresponding remaining list of inputs. If there are no possible transition states with the given input, we terminiate and record it in the output. The function \texttt{ndautAccept} then checks whether there is an output that consumes all the inputs, and terminiates at an accepting state.
+We end with the semantic layer for non-deterministic automata. The algorithm used for implementing \texttt{runNA} for trasversing an input string on a non-deterministic automaton is inspired by~\cite{web}. Intuitively, we record a list of \emph{active states} at each step of the traversal, with its corresponding remaining list of inputs. If we reach the end of the given input along some path, we terminiate and record it in the output. The function \texttt{ndautAccept} then checks whether there is an output that consumes all the inputs, and terminiates at an accepting state.
 
 \begin{code}
 runNA :: (Alphabet l, Ord s) => NDetAut l s  -> s -> [l] -> [([l], s)]
@@ -164,8 +149,7 @@ runNA na st input =
     where   nsucc = ndelta na Nothing  st
 
 ndautAccept :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> Bool
-ndautAccept na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $
-                      runNA na s0 w
+ndautAccept na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $ runNA na s0 w
 
 ndfinalStates :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> [s]
 ndfinalStates na s0 w = snd <$> runNA na s0 w

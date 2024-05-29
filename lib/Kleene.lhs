@@ -1,6 +1,4 @@
 
-\section{Automata and Regular Expressions}\label{sec:Kleene}
-
 We have now defined (non)deterministic automata and regular expressions. 
 Next, perhaps unsurprisingly, since these are well known to be two sides of the same coin, we encode a method to translate between them.
 \textbf{Possible to do:} and prove these operations are inverses of each other.
@@ -156,14 +154,12 @@ This construction was relatively straightforward since by looking at what each o
 The next algorithm, moving from automata to regular expressions, is far less intuitive, and encounters difficulties we will note in the final section.
 This complexity is due to the non-inductive/recursive definition of automata as opposed to regex.
 
-\subsection{Automata to Regular Expressions}
+\subsection{Automata to Regular Expressions}\label{subsec:kalgo}
 
 Here, we implement which take a non/deterministic automaton, a starting state, and outputs a corresponding regular expression.
 The algorithm we use, called Kleene's algorithm, allows us to impose a semi-recursive structure on an automaton which in turn allows us to extract a regular expression.
 First, we provide the implement of Kleene's algorithm (as well as some motivation and examples) before explaining how Kleene's algorithm can provide us with our desired conversion.
 We conclude with a brief overview of the helper functions we enlist throughout our implementation as well as a slightly different conversion (and why we opted with our method.)
-
-\subsubsection{Kleene's Algorithm}
 
 Below, you will find our implementation of Kleene's algorithm;
 it take an automaton (whose states are labeled $[0 . . n]$ exactly), and three integer $i,j,k$ (which correspond to states) and outputs a regular expression corresponding to the set of all paths from state $i$ to state $j$ without passing through states higher than $k$.
