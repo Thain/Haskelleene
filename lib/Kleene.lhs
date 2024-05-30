@@ -50,11 +50,7 @@ fromReg reg = (encodeNA ndata,st)
   where (ndata,st) = regToAut reg
 \end{code}
 
-As we head into each inductive step, we note a few conventions. 
-First, an observant reader will have seen that our function outputs automata data with integer states. 
-Since we are inductively constructing automata we need to be adding new states while preserving the old ones (and their transition functions).
-\texttt{Int} states make it very easy to relabel them, and---as we will see later---make it much easier to run algorithms on.
-Below is the function for the \texttt{Seq} operator, alongside a helpful fetch function.
+An observant reader will have noticed this outputs an automata with \texttt{Int} states; this simply makes it easy to recurisvely generate new state labels in a well-bheaved way.
 
 \begin{code}
 
@@ -76,7 +72,7 @@ gluingSeq (aut1, _) (aut2, s2) =  fstAut ++ mid ++ sndAut where
 
 This function takes two automata \texttt{aut1,aut2} and glues them together by adding epsilon transitions between the accepting states of \texttt{aut1} and the starting state of \texttt{aut2}.
 We need to add these epsilon transitions rather than merely identify the starting/ending in order to preserve transitions out of said states.
-For example, if we identify states 1 and 2 in the following two automata (blue states being intial, ornage being accepting):
+For example, if we identify states 1 and 2 in the following two automata (blue states being intial, orange being accepting):
 \[\begin{tikzcd}[ampersand replacement=\&]
 	\textcolor{rgb,255:red,92;green,92;blue,214}{2} \&\& \textcolor{rgb,255:red,214;green,153;blue,92}{3} \\
 	\textcolor{rgb,255:red,92;green,92;blue,214}{0} \&\& \textcolor{rgb,255:red,214;green,153;blue,92}{1}
@@ -91,12 +87,7 @@ Additionally, we multiply the states in the first automaton by 13 and states in 
 In the gluing and star operator we have to add new states (in order to prevent the gluing issue above). 
 We always add a state labeled $1$ for a starting state and $2$ for an accepting state.
 Multiplication by prime numbers allows us to ensure that our new automaton \textit{both} preserves the transition function of its component parts \textit{and} has distinct state labels for every state.
-Each input for each operator has a unique prime number assigned to it:
-\begin{enumerate}
-\item \texttt{Seq}: $13,3$
-\item \texttt{Alt}: $5,7$
-\item \texttt{Star}: $11$.
-\end{enumerate}
+The primes are chosen arbitrarily, they simply ensure that each state has a unique label.
  
 \begin{code}
 altRegAut :: RgxAutData l -> RgxAutData l -> RgxAutData l
@@ -156,14 +147,14 @@ This complexity is due to the non-inductive/recursive definition of automata as 
 
 \subsection{Automata to Regular Expressions}\label{subsec:kalgo}
 
-Here, we implement which take a non/deterministic automaton, a starting state, and outputs a corresponding regular expression.
+Here, we implement an algorithim which take a non/deterministic automaton, a starting state, and outputs a corresponding regular expression.
 The algorithm we use, called Kleene's algorithm, allows us to impose a semi-recursive structure on an automaton which in turn allows us to extract a regular expression.
 First, we provide the implement of Kleene's algorithm (as well as some motivation and examples) before explaining how Kleene's algorithm can provide us with our desired conversion.
 We conclude with a brief overview of the helper functions we enlist throughout our implementation as well as a slightly different conversion (and why we opted with our method.)
 
 Below, you will find our implementation of Kleene's algorithm;
-it take an automaton (whose states are labeled $[0 . . n]$ exactly), and three integer $i,j,k$ (which correspond to states) and outputs a regular expression corresponding to the set of all paths from state $i$ to state $j$ without passing through states higher than $k$.
-This is a rather strong structural requirement, but it allows us to define the algorithm recursively and---as we will show later in the report---it is easy to convert any automaton into one with the correct state labels.
+it take an automaton (whose states are labeled $[0 . . n]$ exactly), and three integers $i,j,k$ (which correspond to states) and outputs a regular expression corresponding to the set of all paths from state $i$ to state $j$ without passing through states higher than $k$.
+The integer labels allow us to define a recursive function and it is easy to relabel states like this.
 
 \begin{code}
 kleeneAlgo :: Eq l => AutData l Int -> Int -> Int -> Int -> Regex l 
@@ -187,7 +178,7 @@ This is simply the set of transition labels which connect $i$ to $j$ (alongside 
 However, if $k>-1$, we need to remove the $k$'th state and shift the transition functions into and out of $k$ amidst the rest of the automaton.
 First, we don't touch any of the paths which avoid $k$ by including $\texttt{kleeneAlgo} \ \texttt{aut} \ i \ j \ (k-1)$.
 The remaining sequence can be viewed as: take any path to you want to $k$ but stop \textit{as soon as} you reach $k$ for the first time;
-then, take any path from $k$ to $k$ as many times as you want (we need the Star here because this algorithm does not normally permit loops);
+then, take any path from $k$ to $k$ as many times as you want;
 finally, take any path from $k$ to $j$.
 As we will see in the following example, this entire process can be though of as a single transition label encoding all of the data that used to be at $k$.
 By removing every state, we are left with a single arrow which corresponds to our desired regular expression.
@@ -202,9 +193,10 @@ In the following toy example, we apply the algorithim to this automata with inti
 \end{tikzcd}\]
 
 We apply the algorithim to $0$ (the starting state) $1$ (the accepting state) and $2$ (the largest state.) 
-By removing $2$ from the state space (which is what incrementing $k$ does), we get
+By removing $2$ from the state space (which is what decrementing $k$ does), we get
 \[(a\epsilon^*b)+a\]
-which is exactly what the regular expression corresponding to this automaton is. Hopefully this very simple example has highlighted the motivation and process behind the algorithim.
+which is exactly what the regular expression corresponding to this automaton is. 
+Hopefully this very simple example has highlighted the motivation and process behind the algorithim.
 
 With this broad motivation, we can know discuss how to implement the algorithm to provide our desired conversion:
 \begin{code}
@@ -221,7 +213,7 @@ For a given accepting state $a$, $(\texttt{kleeneAlgo} \ \texttt{aut} \  \text{f
 This is exactly what we were looking for, given our previous understanding of the algorithm itself.
 
 Below we briefly describe the helper functions needed for this implementation as well as an alternate definition of autToReg, whose problems we will expound upon in the last section of this chapter.
-
+First, this function simply returns returns all the ways to directly move between two states for the base case of Kleene's algorithm.
 \begin{code}
 -- takes automata data and states s1, s2. Outputs all the ways to get s2 from s1
 successorSet :: Eq s => AutData l s -> s -> s -> [Maybe l]
@@ -229,7 +221,8 @@ successorSet aut s1 s2
   | isNothing (lookup s1 (transitionData aut) ) = [] -- if there are no successors
   | otherwise = map fst (filter (\w -> s2 == snd w) (fromJust $ lookup s1 (transitionData aut)) )
 \end{code}
-This function simply returns returns all the ways to directly move between two states for the base case of Kleene's algorithm.
+Additionally, as mentioned, we need to convert an arbitrary automaton to one with well-behaved state labels in order to define Kleene's algorithm. 
+These functions do so handily via the use of a dictionary.
 \begin{code}
 -- states as integer makes everything easier. We use a dictionary to relabel in one sweep per say
 relabelHelp :: Ord s => AutData l s -> s -> Int
@@ -242,27 +235,7 @@ relabelAut (aut, s1) = (AD [relabelHelp aut s | s <- stateData aut]
                        , relabelHelp aut s1)
 
 \end{code}
-As mentioned, we need to convert an arbitrary automaton to one with well-behaved state labels in order to define Kleene's algorithm. 
-These functions do so handily via the use of a dictionary.
-\begin{code}
--- take aut data and make a nice start state/end state
-cleanAutomata:: RgxAutData l -> RgxAutData l
-cleanAutomata (aut, s) = (AD (0:lastState:[x+1 | x <- stateData aut])
-                             [lastState]
-                             (cleanTransition (aut,s))
-                         ,0) where lastState = 1+length (stateData aut)
- 
-cleanTransition:: RgxAutData l -> [(Int, [(Maybe l, Int)])]
-cleanTransition (aut, s) = start ++ middle ++ end where
-  start = [(0, [(Nothing, s+1)])]
-  middle = [(x+1, addTuple 1 (aut `trsOf` x)) | x <- stateData aut, x `notElem` acceptData aut]
-  end = [(x+1, (Nothing, length (stateData aut) + 1) : addTuple 1 (aut `trsOf` x)) | x<- acceptData aut]
-\end{code}
-\textbf{AUTTOREGSLOW WAS REMOVED HERE, DIDN'T REMOVE ANY OTHER TEXT}
-These last pieces of code allow us to define a version of autToReg which takes in multiple initial states rather than just one. 
-It does so by adding a new initial (and accepting) state after the relabeling - connected via epsilon transition.
-While this construction is more general, it adds several more transitions which further increase the size of the corresponding regular expression.
-More on this issue in the following section.
+
 \begin{code}
 -- Another implementation of Automata to Reg, assuming the aut is deterministic 
 dautToReg :: (Alphabet l, Ord s) => DetAut l s -> s -> Regex l 
