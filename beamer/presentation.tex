@@ -47,9 +47,9 @@ An basic version of a state machine. It takes inputs from some \emph{alphabet}, 
                         , ndelta :: Maybe l -> s -> [s] }
 \end{code}\pause
 \begin{itemize}
-\item a state in a deterministic automaton accepts a word if that words leads to an accepting state. \pause
+\item a state in a deterministic automaton accepts a word iff that word leads to an accepting state. \pause
 
-\item a state in a non-deterministic automaton accepts a word if \emph{there exists a path} to an accepting state.
+\item a state in a non-deterministic automaton accepts a word iff \emph{there exists a path} using that word to an accepting state.
 
 \end{itemize}
 \end{frame}
@@ -309,7 +309,7 @@ we need to avoid infinite looping by accepting the empty split!
 			fournode/.style={rectangle, draw=green!60, fill=green!5, thin, minimum size=5mm},
 			]
 			%Nodes
-			\node[onenode]      (one)                              {Regular expression are built inductively};
+			\node[onenode]      (one)                              {Regular expressions are built inductively};
 			\node[twonode]        (two)       [below=of one] {Define a way to build autmata inductively};
 			\node[threenode]      (three)       [below=of two] {Base Cases};
 			\node[fournode]        (four)       [below=of three] {Each regex constructor $\rightarrow$ a way to nicely \textit{glue} automata together};
@@ -336,7 +336,7 @@ we need to avoid infinite looping by accepting the empty split!
 	Given two (one) automata and a regular expression constructor, make a new automaton
 	\begin{enumerate}[]
 		\item \boxed{\texttt{Seq:}} Attach both automata end to end.
-		\item \boxed{\texttt{Alt}} Attach both automata in parralel (with new initial and final states).
+		\item \boxed{\texttt{Alt}} Attach both automata in parallel (with new initial and final states).
 		\item \boxed{\texttt{Star}} Fold the automaton in a circle around a new initial/final state.
 	\end{enumerate}
 \end{frame}
@@ -362,7 +362,7 @@ we need to avoid infinite looping by accepting the empty split!
 	Problems and Future Work
 \end{frame}
 
-\begin{frame}{Kleene's Algorithim}
+\begin{frame}{Kleene's Algorithm}
 	\centering\Large
 	Also known as State-Elimination\vspace{5mm}
 	
@@ -402,6 +402,25 @@ relabelAut (aut, s1) = (AD
 	VERY SLOW
 \end{frame}
 
+\begin{frame}[fragile]{How to Test?}
+  \texttt{QuickCheck}, using randomly generated words:
+\[\begin{tikzcd}
+	&& {\mathcal{P}(\Sigma^\star)} \\
+	{\mathsf{Regex}} && {\mathsf{NA}} && {\mathsf{DA}} \\
+	&& {\texttt{Bool}}
+	\arrow[curve={height=12pt}, dashed, from=1-3, to=2-1]
+	\arrow[dashed, from=1-3, to=2-3]
+	\arrow[curve={height=-12pt}, dashed, from=1-3, to=2-5]
+	\arrow[shift left=2, from=2-1, to=2-3]
+	\arrow[curve={height=12pt}, dashed, from=2-1, to=3-3]
+	\arrow[shift left=2, from=2-3, to=2-1]
+	\arrow[shift left=2, from=2-3, to=2-5]
+	\arrow[dashed, from=2-3, to=3-3]
+	\arrow[shift left=2, from=2-5, to=2-3]
+	\arrow[curve={height=-12pt}, dashed, from=2-5, to=3-3]
+\end{tikzcd}\]
+\end{frame}
+
 \begin{frame}{Future Work}
 	\centering\Large
 	
@@ -410,6 +429,12 @@ relabelAut (aut, s1) = (AD
 	Further simplify regular expressions (commutativity?) \vspace{5mm}
 	
 	Test other algorithms and compare with Kleene's
-\end{frame}
+      \end{frame}
 
+      \begin{frame}
+        \centering\Large
+
+        Thank you!
+      \end{frame}
+      
 \end{document}
