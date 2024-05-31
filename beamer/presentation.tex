@@ -289,7 +289,9 @@ regexAccept (Star r) w = any (regexAccept (Star r) . snd)
                              (ignoreE (initCheck r w))
   where ignoreE = if (regexAccept r []) then init else id 
 \end{code}\vspace{1em}
-we need to avoid infinite looping by accepting the empty split!
+we need to avoid infinite looping by accepting the empty split!\vspace{2em}
+
+These cases are slow; potential optimizations?
 \end{frame}
 
 \section{Kleene's Theorem}
