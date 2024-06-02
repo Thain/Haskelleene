@@ -5,8 +5,6 @@ We will now use the library form Section \ref{sec:Alphabet} in a program.
 \begin{code}
 module Main where
 
-import Alphabet
-
 main :: IO ()
 main = do
   putStrLn "Hello!"
