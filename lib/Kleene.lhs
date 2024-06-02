@@ -1,7 +1,6 @@
 
 We have now defined (non)deterministic automata and regular expressions. 
 Next, perhaps unsurprisingly, since these are well known to be two sides of the same coin, we encode a method to translate between them.
-\textbf{Possible to do:} and prove these operations are inverses of each other.
 Converting from a regex to a non-deterministic automaton is relatively straightforward, so we will begin with that.
 Second, we will describe Kleene's algorithm (a variation of the Floyd-Warshall Algorithm) in order to transform an automaton into a regex.
 Finally, we will note general problems with the above two steps as well as possible future methods to improve them.
@@ -87,7 +86,7 @@ Additionally, we multiply the states in the first automaton by 13 and states in 
 In the gluing and star operator we have to add new states (in order to prevent the gluing issue above). 
 We always add a state labeled $1$ for a starting state and $2$ for an accepting state.
 Multiplication by prime numbers allows us to ensure that our new automaton \textit{both} preserves the transition function of its component parts \textit{and} has distinct state labels for every state.
-The primes are chosen arbitrarily, they simply ensure that each state has a unique label.
+The primes are chosen arbitrarily, they simply ensure that each state has a unique label and allow us to understand which operations have been applied to which states for bugetsting-purposes.
  
 \begin{code}
 altRegAut :: RgxAutData l -> RgxAutData l -> RgxAutData l
@@ -182,6 +181,7 @@ then, take any path from $k$ to $k$ as many times as you want;
 finally, take any path from $k$ to $j$.
 As we will see in the following example, this entire process can be though of as a single transition label encoding all of the data that used to be at $k$.
 By removing every state, we are left with a single arrow which corresponds to our desired regular expression.
+It is important to note that the algorithim does not \textit{actually} change the autaumaton - rather this is a useful description of the recursive process the algorithim goes through.
 
 In the following toy example, we apply the algorithim to this automata with intial state $0$ and accepting state $1$:
 \[\begin{tikzcd}[ampersand replacement=\&]
@@ -236,20 +236,7 @@ relabelAut (aut, s1) = (AD [relabelHelp aut s | s <- stateData aut]
 
 \end{code}
 
-\begin{code}
--- Another implementation of Automata to Reg, assuming the aut is deterministic 
-dautToReg :: (Alphabet l, Ord s) => DetAut l s -> s -> Regex l 
-dautToReg daut s = simplifyRegex $ foldr (Alt . dautToRegSub daut s (states daut)) Empty $ accept daut where
-  dautToRegSub da s0 [] sn = if s0 /= sn then resut else Alt Epsilon resut 
-    where trans = delta da
-          succs = filter (\l -> trans l s0 == sn) completeList
-          resut = foldr (Alt . L) Empty succs
-  dautToRegSub da s0 (s1:ss) sn = simplifyRegex $ Alt reg1 $ Seq reg2 $ Seq (Star reg3) reg4
-    where reg1 = simplifyRegex $ dautToRegSub da s0 ss sn
-          reg2 = simplifyRegex $ dautToRegSub da s0 ss s1
-          reg3 = simplifyRegex $ dautToRegSub da s1 ss s1
-          reg4 = simplifyRegex $ dautToRegSub da s1 ss sn
-\end{code}
+
 
 \subsection{Issues with the Algorithms}
 
