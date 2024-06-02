@@ -10,7 +10,7 @@ module Main where
 import Test.Hspec ( hspec, describe, it, shouldBe )
 import Test.Hspec.QuickCheck ( prop )
 import Test.QuickCheck ( (==>) )
-import Automata ( acceptDA, decode, fromNA, fromStartNA, ndautAccept )
+import Automata ( acceptDA, decode, fromNA, ndautAccept, dtdAccept )
 import Regex ( regexAccept )
 import Kleene ( autToReg, dautToReg, fromReg )
 import Examples ( exampleRegex, myNDA, myTestRun, wikiDA )
@@ -33,15 +33,13 @@ main = hspec $ do
     it "DA test run result should be (4,True)" $
       myTestRun `shouldBe` (4,True)
     prop "NA and transfer to DA should give the same result" $
-      \input -> ndautAccept myNDA 1 input == acceptDA (fromNA myNDA) (fromStartNA myNDA 1) input
+      \input -> ndautAccept myNDA 1 input == dtdAccept myNDA 1 input
     prop "reg to NA should give the same result" $
       \input -> regexAccept exampleRegex input == uncurry ndautAccept (fromReg exampleRegex) input
     prop "DA to reg should give the same result" $
-      \input -> length input <= 30 ==> 
-                acceptDA wikiDA 0 input == regexAccept (dautToReg wikiDA 0) input
+      \input -> acceptDA wikiDA 0 input == regexAccept (dautToReg wikiDA 0) input
     prop "NA to reg should give the same result" $
-      \input -> length input <= 30 ==> 
-                ndautAccept myNDA 1 input == regexAccept (autToReg (decode myNDA, 1)) input
+      \input -> ndautAccept myNDA 1 input == regexAccept (autToReg (decode myNDA, 1)) input
 \end{code}
 
 The result is recorded below. The reason in the last two cases we restrict the arbitrarily generated input data to have length less than 30 is that the current algorithms is not efficient enough to run the semantics for larger inputs on regular expressions.

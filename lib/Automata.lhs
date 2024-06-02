@@ -10,7 +10,7 @@ module Automata where
 
 import Alphabet ( Alphabet(..), alphIter ) -- contains all of our utility functions
 import Data.Maybe ( isJust, fromJust, isNothing )
-import Data.List ( nub )
+import Data.List ( nub, intersect )
 import qualified Data.Set as Set
 \end{code}
 
@@ -74,7 +74,7 @@ encodeDA d | not $ detCheck d = Nothing
                                    , accept = acceptData d
                                    , delta = safeDelta } where
     tData = transitionData d
-    safeDelta ltr st = (fromJust . lookup (Just ltr) . fromJust . lookup st) tData      -- convert data to delta function
+    safeDelta ltr st = (fromJust . lookup (Just ltr) . fromJust . lookup st) tData      -- convert data to delta functionp
     detCheck ad = length (fst <$> tData) == length (stateData ad) && allUnq (fst <$> tData) -- all states are in transitionData exactly once
                && all (detCheckTr . snd) tData
     detCheckTr trs = notElem Nothing (fst <$> trs)        -- no empty transitions
@@ -161,17 +161,24 @@ encodeNA d = NA { nstates = stateData d
 
 We end with the semantic layer for non-deterministic automata. The algorithm used for implementing \texttt{runNA} for trasversing an input string on a non-deterministic automaton is inspired by~\cite{web}. Intuitively, we record a list of \emph{active states} at each step of the traversal, with its corresponding remaining list of inputs. If we reach the end of the given input along some path, we terminiate and record it in the output. The function \texttt{ndautAccept} then checks whether there is an output that consumes all the inputs, and terminiates at an accepting state.
 
+TODO fixpoint ?? nub ?? epsilon loop forever?
+
 \begin{code}
 runNA :: (Alphabet l, Ord s) => NDetAut l s  -> s -> [l] -> [([l], s)]
-runNA na st input = 
-  case input of
-    [] -> ([],) <$> epReachable (ndelta na) st
-    (w:ws) -> concatMap (\s -> runNA na s input) nsucc ++
-              case wsucc of
-                [] -> [(input,st)]
-                ls -> concatMap (\s -> runNA na s ws) ls
-      where wsucc = ndelta na (Just w) st
-    where   nsucc = ndelta na Nothing  st
+runNA na st [] = (Set.elems . runNAFixPt na . Set.singleton) ([],st)
+runNA na st input = (Set.elems . runNAFixPt na . Set.fromList . map (input,)) (epReachable na st)
+
+runNAFixPt :: (Alphabet l, Ord s) => NDetAut l s -> (Set.Set ([l],s)) -> (Set.Set ([l],s))
+runNAFixPt na active | active == next = active
+                     | otherwise = runNAFixPt na next
+  where next = appStep active
+        appStep ac = Set.fromList $ concatMap (uncurry (oneStep na)) ac
+        oneStep na [] st = ([], st) : (([],) <$> (ndelta na Nothing st))
+        oneStep na (w:ws) st  = ((ws,) <$> (ndelta na (Just w) st))
+                                ++ ((w:ws,) <$> (epReachable na st))
+        
+epReachable :: (Alphabet l, Ord s) => NDetAut l s -> s -> [s]
+epReachable na s = map snd (runNA na s [])
 
 ndautAccept :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> Bool
 ndautAccept na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $ runNA na s0 w
@@ -186,28 +193,20 @@ Now returning to automaton conversion: the non-trivial direction is that any non
 
 \begin{code}
 fromNA :: (Alphabet l, Ord s) => NDetAut l s -> DetAut l (Set.Set s)
-fromNA nda = DA { states = Set.toList dasts
-                , accept = Set.toList $ Set.filter acchelp dasts
-                , delta = fromTransNA ntrans }
-  where ndasts = nstates nda
-        dasts  = Set.powerSet $ Set.fromList ndasts
-        ndaacc = naccept nda
-        acchelp set = not $ Set.disjoint set $ Set.fromList ndaacc
-        ntrans = ndelta nda
+fromNA nda = DA { states = Set.toList subsets
+                , accept = Set.toList $ Set.filter acchelp subsets
+                , delta = psetDelta }
+  where subsets  = Set.powerSet $ Set.fromList $ nstates nda
+        acchelp set = (not . Set.disjoint set . Set.fromList) acceptSingles
+        acceptSingles = filter (\s -> (not . null) (intersect (epReachable nda s) (naccept nda))) (nstates nda)
+        psetDelta l s = Set.unions $ Set.map (onestep l) s
+        onestep l s = Set.fromList $ result ++ concatMap (epReachable nda) result
+          where result = (ndelta nda) (Just l) s
 
-epReachable :: (Alphabet l, Ord s) => (Maybe l -> s -> [s]) -> s -> [s]
-epReachable ntrans st = st : concatMap (epReachable ntrans) (ntrans Nothing st)
-
-fromTransNA :: (Alphabet l, Ord s) => (Maybe l -> s -> [s]) -> l -> Set.Set s -> Set.Set s
-fromTransNA ntrans sym set = result
-  where starts = listUnions (epReachable ntrans) set
-        step = listUnions (ntrans $ Just sym) starts
-        result = listUnions (epReachable ntrans) step
-        listUnions f input = Set.unions $ Set.map Set.fromList $ Set.map f input
-
-fromStartNA :: (Alphabet l, Ord s) => NDetAut l s -> s -> Set.Set s
-fromStartNA nda st = Set.fromList $ epReachable ntrans st
-  where ntrans = ndelta nda
+dtdAccept :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> Bool
+dtdAccept na st w = (run dtd initSt w) `elem` (accept dtd)
+   where dtd = fromNA na
+         initSt = Set.fromList (epReachable na st)
 \end{code}
 
 We test the claimed behavioural equivalence in Section~\ref{sec:Testing}.
