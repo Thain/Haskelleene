@@ -8,9 +8,7 @@ import Alphabet ( Alphabet(..) )
 
 In this section, we will define regular expressions, in the Kleene algebraic sense of the term. It's important to note that this version of regular expressions is different from those that are well known to programmers. For example, the language $\{ a^nba^n | n \in \N \}$ is well known to not be regular, and so not have a regular expression that represents it; meanwhile the programmer's regular expressions can encode this language rather easily.
 
-The following serves as our definition of the \textsf{Regex} type. Note the distinction between \texttt{Empty} and \texttt{Epsilon} type constructors. The former is the regex representing the empty language, while the latter represents language containing only the empty string.
-
-Note also that we use a type parameter \texttt{l} for this type. This is so that we can use different input alphabets if we so choose; see the \texttt{Alphabet} module for the definition of the \texttt{Alphabet} type class in Section~\ref{sec:Alphabet}.
+The following serves as our definition of the \textsf{Regex} type. Note the distinction between \texttt{Empty} and \texttt{Epsilon}. The former is the empty language, while the latter is the empty string. Note also the type parameter \texttt{l}. This is so that we can use different input alphabets if we choose; see the \texttt{Alphabet} module for the definition of the \texttt{Alphabet} type class in Section~\ref{sec:Alphabet}.
 
 \begin{code}
 data Regex l = Empty | 
@@ -36,29 +34,27 @@ pPrintRgx (Seq (Alt r r') (Alt r'' r''')) = "(" ++ pPrintRgx (Alt r r') ++ ")("
                                              ++ pPrintRgx (Alt r'' r''') ++ ")"
 pPrintRgx (Seq (Alt r r') r'') = "(" ++ pPrintRgx (Alt r r') ++ ")" ++ pPrintRgx r''
 pPrintRgx (Seq r'' (Alt r r')) = pPrintRgx r'' ++ "(" ++ pPrintRgx (Alt r r') ++ ")"
+pPrintRgx (Seq r (Star (L a))) = pPrintRgx r ++ "(" ++ pPrintLetter a ++ "*)"
+pPrintRgx (Seq (Star (L a)) r) = "(" ++ pPrintLetter a ++ "*)" ++ pPrintRgx r
 pPrintRgx (Seq r r') = pPrintRgx r ++ pPrintRgx r'
-pPrintRgx (Star (L a)) = "(" ++ pPrintLetter a ++ "*)"
+pPrintRgx (Star (L a)) = pPrintLetter a ++ "*"
 pPrintRgx (Star r) = "(" ++ pPrintRgx r ++ ")*"
 
 -- QoL functions for sequencing or alternating lists of regexes
 seqList :: [Regex l] -> Regex l
-seqList [l] = l
-seqList (l:ls) = Seq l $ seqList ls
 seqList [] = Epsilon
+seqList (l:ls) = Seq l $ seqList ls
 
 altList :: [Regex l] -> Regex l
-altList [l] = l
-altList (l:ls) = Alt l $ altList ls
 altList [] = Empty
+altList (l:ls) = Alt l $ altList ls
 \end{code}
-The proof system for the equational theory of regular expressions, known as Kleene algebra, can reason about equivalence of regular expressions, for example:
-\[ a + (b + a^*) = a + (a^\star + b) = (a + a^\star) + b = a^\star + b \]
-It is outside of the scope of this project to implement a proof searcher for this system. Having said that, there are certain simplifications we can make to regular expressions that will help improve readability and running time. For example:
+It is outside of the scope of this project to implement an equivalence checker for regexes. Having said that, there are certain simplifications we can make to regular expressions that will help improve readability and running time. For example:
 \begin{align*}
 \emptyset + r &= r + \emptyset =  r \\
 \epsilon r &= r \epsilon = r
 \end{align*}
-...and more. The objective here is not to simplify the regular expression as far as possible, but to implement easy simplifications that improve readability (limiting occurrence of redundancies, and so on). We loop this function as many times as is necessary to reach a fixed point: mainly looking to remove unnecessary \texttt{Empty}, \texttt{Epsilon}, and redundant \texttt{Star}s.
+...and more. The objective here is not to fully simplify the regular expression, but to implement easy simplifications to improve readability and runtime. We loop this function up to a fixed point.
 \begin{code}
 simplifyRegex :: Eq l => Regex l -> Regex l
 simplifyRegex regex | helper regex == regex = regex
@@ -84,9 +80,9 @@ simplifyRegex regex | helper regex == regex = regex
     Star r -> Star (simplifyRegex r)
     x -> x
 \end{code}
-Now we need to set to the task of defining a semantics for these regular expressions. That is, given a list of letters from the input alphabet (a word), check whether it belongs to the language represented by the regular expression. First, we will need a utility function for checking if initial sequences of the word satisfy part of the regex, specifically for the \texttt{Sequence} and \texttt{Star} cases.
+Now we need to set to the task of defining a semantics for these regular expressions. First, we will need a utility function for checking if initial sequences of the word satisfy part of the regex, specifically for the \texttt{Sequence} and \texttt{Star} cases.
 
-This function takes a \texttt{Regex} and a word, and produces all splits of the word where the first part of the split satisfies the regex. For the word $abc$, with the regex $c^\star a^\star$, \texttt{initCheck} would output $(\epsilon, abc)$ and $(a,bc)$. Note that this function does use \texttt{regexAccept}, which we will define below, and that this function does nothing to reduce the ``size'' of $r$, which means we need to be careful about infinite looping. More on that below.
+This function takes a \texttt{Regex} and a word, and produces all splits of the word where the first part of the split satisfies the regex. For the word $abc$, with the regex $c^\star a^\star$, \texttt{initCheck} would output $(\epsilon, abc)$ and $(a,bc)$. 
 \begin{code}
 initCheck :: Eq l => Regex l -> [l] -> [([l],[l])]
 initCheck r w = filter (regexAccept r . fst) $ splits w where
@@ -98,7 +94,7 @@ Now we finally define the semantics for our regular expressions. We include spec
 
 In fact, both our sequencing and star operations are rather slow; this is because we need to examine all initial sequences of the word to see if they can match the regex. This is why \texttt{initCheck} returns the split of the word, rather than just the initial segment that matches: we need to then check the rest of the regex (the other operand in the case of \texttt{Seq}, or the regex again in the case of \texttt{Star}) on what remains of the string.
 
-One potential optimisation we could make to this algorithm: encode the range of string lengths a regex will accept, and compare to length of the input string, to find easier reject cases. We could pair this with splitting as we go, rather than up front.
+One potential optimisation we could make to this algorithm: calculate the range of string lengths a regex will accept, and compare this length to the input string, to find easier reject cases. We could pair this with splitting as we go, rather than up front.
 \begin{code}
 regexAccept :: Eq l => Regex l -> [l] -> Bool
 -- the empty language accepts no words

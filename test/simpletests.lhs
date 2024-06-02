@@ -7,55 +7,44 @@ and test some properties.
 \begin{code}
 module Main where
 
-import Test.Hspec ( hspec, describe, it, shouldBe )
+import Test.Hspec ( hspec, describe )
 import Test.Hspec.QuickCheck ( prop )
-import Test.QuickCheck ( (==>) )
-import Automata ( acceptDA, decode, fromNA, ndautAccept, dtdAccept )
+import Automata ( acceptDA, decode, fromDA, acceptNA, dtdAccept )
 import Regex ( regexAccept )
-import Kleene ( autToReg, dautToReg, fromReg )
-import Examples ( exampleRegex, myNDA, myTestRun, wikiDA )
+import Kleene ( autToReg, fromReg )
+import Examples ( exampleRegex, myNDA, wikiDA )
 
 \end{code}
 
-We have tested the following basic facts:
-\begin{itemize}
-\item A basic running example for a deterministic automaton.
-\item The behavioural equivalence of determinisitic and non-deterministic automata under the conversion implemented in Section~\ref{sec:Automata}.
-\item The behavioural equivalence of regular expressions and its corresponding non-deterministic automaton implemented in Section~\ref{sec:Kleene}.
-\item The behavioural equivalence of a deterministic automaton and its corresponding regular expression implemented in Section~\ref{sec:Kleene}.
-\item The behavioural equivalence of a non-deterministic automaton and its corresponding regular expression implemented in Section~\ref{sec:Kleene}.
-\end{itemize}
-
+We have tested behavioural equivalence using randomly generated words. We use a regex, a DA, and an NA as starting points, convert them using one of our functions, and compare the semantics of the original with the new version.
+ 
 \begin{code}
 main :: IO ()
 main = hspec $ do
   describe "Examples" $ do
-    it "DA test run result should be (4,True)" $
-      myTestRun `shouldBe` (4,True)
     prop "NA and transfer to DA should give the same result" $
-      \input -> ndautAccept myNDA 1 input == dtdAccept myNDA 1 input
+      \input -> acceptNA myNDA 1 input == dtdAccept myNDA 1 input
     prop "reg to NA should give the same result" $
-      \input -> regexAccept exampleRegex input == uncurry ndautAccept (fromReg exampleRegex) input
+      \input -> regexAccept exampleRegex input == uncurry acceptNA (fromReg exampleRegex) input
     prop "DA to reg should give the same result" $
-      \input -> acceptDA wikiDA 0 input == regexAccept (dautToReg wikiDA 0) input
+      \input -> acceptDA wikiDA 0 input == regexAccept (autToReg ((decode . fromDA) wikiDA, 0)) input
     prop "NA to reg should give the same result" $
-      \input -> ndautAccept myNDA 1 input == regexAccept (autToReg (decode myNDA, 1)) input
+      \input -> acceptNA myNDA 1 input == regexAccept (autToReg (decode myNDA, 1)) input
 \end{code}
 
-The result is recorded below. The reason in the last two cases we restrict the arbitrarily generated input data to have length less than 30 is that the current algorithms is not efficient enough to run the semantics for larger inputs on regular expressions.
+The result is recorded below. In the beta version of this report, we had to restrict the input size for some cases, but optimisations to the NA semantics made since then have made the limit unnecessary; and we managed to cut our benchmark time in half, too. The main optimisation was to move from tracking active states with a list to using a \texttt{Set}, cutting down on redundant work, and fixing a bug that allowd for infinite looping.
 
 \begin{showCode}
 Examples
-  DA test run result should be (4,True) [\/]
   NA and transfer to DA should give the same result [\/]
     +++ OK, passed 100 tests.
   reg to NA should give the same result [\/]
     +++ OK, passed 100 tests.
-  DA to reg should give the same result [\/]     
-    +++ OK, passed 100 tests; 84 discarded.
-  NA to reg should give the same result [\/]     
-    +++ OK, passed 100 tests; 84 discarded.
+  DA to reg should give the same result [\/]
+    +++ OK, passed 100 tests.
+  NA to reg should give the same result [\/]
+    +++ OK, passed 100 tests.
 
-Finished in 6.8299 seconds
-5 examples, 0 failures
+Finished in 3.6397 seconds
+4 examples, 0 failures
 \end{showCode}

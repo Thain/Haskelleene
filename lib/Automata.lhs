@@ -153,43 +153,36 @@ encodeNA d = NA { nstates = stateData d
     mTr = (tr0, fst prop ++ tr1)
     remTrs = snd prop
     prop = propTrs tr0 trs
-  -- for a given state, propagate all of its outputs together, and return
+  -- for a given state, propagate all of its outputs together
   propTrs _ [] = ([],[])
   propTrs st (tr:trs) = appendTuple resultTuple (propTrs st trs) where
     resultTuple = if st == fst tr then (snd tr,[]) else ([],[tr])
 \end{code}                
 
-We end with the semantic layer for non-deterministic automata. The algorithm used for implementing \texttt{runNA} for trasversing an input string on a non-deterministic automaton is inspired by~\cite{web}. Intuitively, we record a list of \emph{active states} at each step of the traversal, with its corresponding remaining list of inputs. If we reach the end of the given input along some path, we terminiate and record it in the output. The function \texttt{ndautAccept} then checks whether there is an output that consumes all the inputs, and terminiates at an accepting state.
-
-TODO fixpoint ?? nub ?? epsilon loop forever?
+Now we implement the semantic layer for non-deterministic automata. The algorithm used for implementing \texttt{runNA} for traversing an input string on a non-deterministic automaton is inspired by~\cite{web}. We keep a set of \emph{active states}, along with what is left of the word in their trace. We use \texttt{oneStep} to simulate traversing an arrow in the automaton. We run, one step at a time, updating our set of active states, and stopping when we reached a fixed point.
 
 \begin{code}
 runNA :: (Alphabet l, Ord s) => NDetAut l s  -> s -> [l] -> [([l], s)]
-runNA na st [] = (Set.elems . runNAFixPt na . Set.singleton) ([],st)
-runNA na st input = (Set.elems . runNAFixPt na . Set.fromList . map (input,)) (epReachable na st)
+runNA na st w = (Set.elems . runNAFixPt na . Set.map (w,)) start
+  where start = if null w then Set.singleton st else Set.fromList $ map snd $ runNA na st []
+        runNAFixPt nda active = if active == next then active else runNAFixPt na next
+          where next = appStep active
+                appStep ac = Set.fromList $ concatMap (uncurry oneStep) ac
+                oneStep [] s = ([], st) : (([],) <$> (ndelta nda Nothing s))
+                oneStep (c:cs) s  = ((cs,) <$> (ndelta nda (Just c) s))
+                                        ++ ((c:cs,) <$> (epReachable nda s))
 
-runNAFixPt :: (Alphabet l, Ord s) => NDetAut l s -> (Set.Set ([l],s)) -> (Set.Set ([l],s))
-runNAFixPt na active | active == next = active
-                     | otherwise = runNAFixPt na next
-  where next = appStep active
-        appStep ac = Set.fromList $ concatMap (uncurry (oneStep na)) ac
-        oneStep na [] st = ([], st) : (([],) <$> (ndelta na Nothing st))
-        oneStep na (w:ws) st  = ((ws,) <$> (ndelta na (Just w) st))
-                                ++ ((w:ws,) <$> (epReachable na st))
-        
 epReachable :: (Alphabet l, Ord s) => NDetAut l s -> s -> [s]
 epReachable na s = map snd (runNA na s [])
 
-ndautAccept :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> Bool
-ndautAccept na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $ runNA na s0 w
+acceptNA :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> Bool
+acceptNA na s0 w = any (\(ls,st) -> null ls && st `elem` naccept na) $ runNA na s0 w
 
 ndfinalStates :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> [s]
 ndfinalStates na s0 w = snd <$> runNA na s0 w
 \end{code}
 
-Finally, we implement algorithms to exhibit the behavioural equivalence between deterministic and non-deterministic automata. The easy direction is that, evidently, any deterministic automaton is also a non-deterministic one:
-
-Now returning to automaton conversion: the non-trivial direction is that any non-deterministic automaton can also be converted into an equivalent deterministic one. The general idea is simple: We change the set of states to the set of \emph{subsets} of the original non-determinisitic automaton. This way, we may code the non-deterministic behaviour in a deterministic way. The algorithm is inspired by~\cite{book_marcelo}.
+Finally, we implement algorithms to exhibit the behavioural equivalence between deterministic and non-deterministic automata. As discussed above, all DAs are of course NAs; but for every NA, we can also construct an DA with equivalent behaviours. The general idea is simple: We change the set of states to the set of \emph{subsets} of the original non-determinisitic automaton. This way, we may code the non-deterministic behaviour in a deterministic way. The algorithm is inspired by~\cite{book_marcelo}. 
 
 \begin{code}
 fromNA :: (Alphabet l, Ord s) => NDetAut l s -> DetAut l (Set.Set s)
@@ -203,10 +196,10 @@ fromNA nda = DA { states = Set.toList subsets
         onestep l s = Set.fromList $ result ++ concatMap (epReachable nda) result
           where result = (ndelta nda) (Just l) s
 
+-- determinise NA, then run as as DA and check acceptance
 dtdAccept :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> Bool
 dtdAccept na st w = (run dtd initSt w) `elem` (accept dtd)
    where dtd = fromNA na
          initSt = Set.fromList (epReachable na st)
 \end{code}
-
 We test the claimed behavioural equivalence in Section~\ref{sec:Testing}.

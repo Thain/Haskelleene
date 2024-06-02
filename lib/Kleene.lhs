@@ -58,15 +58,16 @@ seqRegAut (aut1,s1) (aut2,s2) =
   (adata, 13*s1) where
   adata = AD 
     ([ x*13 | x <- stateData aut1 ] ++ [ x*3 | x <- stateData aut2 ]) -- states
-     [ 3*x | x <- acceptData aut2 ]                                   -- accepting states
-     (gluingSeq (aut1, s1) (aut2, s2))                                -- transition function
+     [ 3*x | x <- acceptData aut2 ]                                   -- accepting
+     (gluingSeq (aut1, s1) (aut2, s2))                                -- transitions
 
 gluingSeq :: RgxAutData l -> RgxAutData l -> [(Int, [(Maybe l, Int)])]
 gluingSeq (aut1, _) (aut2, s2) =  fstAut ++ mid ++ sndAut where
   fstAut = [mulAut 13 x (aut1 `trsOf` x) | x <- stateData aut1, x `notElem` acceptData aut1]
-  mid = [mulAut 13 x ((aut1 `trsOf` x)++[(Nothing,3*s2)])  | x <- acceptData aut1]
+  mid = [appTuple (mulAut 13 x (aut1 `trsOf` x)) (Nothing,3*s2) | x <- acceptData aut1]
   sndAut = [mulAut 3 x (aut2 `trsOf` x) | x <- stateData aut2]  
   mulAut n x trs = (x*n, multTuple n trs)
+  appTuple (n,tr) t = (n,tr++[t])
 \end{code}
 
 This function takes two automata \texttt{aut1,aut2} and glues them together by adding epsilon transitions between the accepting states of \texttt{aut1} and the starting state of \texttt{aut2}.
@@ -168,7 +169,7 @@ kleeneAlgo aut i j k =
                               , simplifyRegex $ Star $ kleeneAlgo aut k k (k-1)
                               , simplifyRegex $ kleeneAlgo aut k j (k-1) ]))
 \end{code}
-Let us quickly dig in what this code actually means before moving onto an example.
+Let us quickly dig in what this code actually means before moving on to an example.
 The algorithm successively removes states by decrementing $k$.
 At each step we remove the highest state and nicely add its associate transition labels to the remaining states.
 If \texttt{regToAut} worked by building up an automaton to follow a regular expression, Kleene's algorithm works by pulling a fully glued automaton apart step by step.
@@ -179,6 +180,7 @@ First, we don't touch any of the paths which avoid $k$ by including $\texttt{kle
 The remaining sequence can be viewed as: take any path to you want to $k$ but stop \textit{as soon as} you reach $k$ for the first time;
 then, take any path from $k$ to $k$ as many times as you want;
 finally, take any path from $k$ to $j$.
+
 As we will see in the following example, this entire process can be though of as a single transition label encoding all of the data that used to be at $k$.
 By removing every state, we are left with a single arrow which corresponds to our desired regular expression.
 It is important to note that the algorithim does not \textit{actually} change the autaumaton - rather this is a useful description of the recursive process the algorithim goes through.
@@ -245,16 +247,13 @@ We have attempted to implement a few simplification throughout the algorithm, bu
 \begin{align*}
 &\texttt{autToReg}  \ (\texttt{wikiAutData}, 0) = \\ 
 &\quad b+c+((\epsilon +a)(a^*)(b+c))+ \\
-&\quad\quad ((b+c+((\epsilon +a)(a^*)(b+c))) \\
-&\quad\quad\ (\epsilon +b+((a+c)(a^*)(b+c)))^* \\
-&\quad\quad\ (\epsilon +b+((a+c)(a^*)(b+c))))
+&\quad\quad ((b+c+((\epsilon +a)(a^*)(b+c))) (\epsilon +b+((a+c)(a^*)(b+c)))^* (\epsilon +b+((a+c)(a^*)(b+c))))
 \end{align*}
 which, upon manual reduction, is equivalent to
 \[ (a+c)^*b(b+c+a(a+c)^*b)^* \]
-However, reduction of regular expressions is \textsf{NP}-hard, and so we have simply tried to encode a few, computationally quick, simplifications as noted in Section~\ref{sec:Regex}
-This is most pressing when we convert back into an automaton, since each new operator corresponds to an additional structural level in the automaton and an additional computational complication we need to overcome when running words on automata.
-There are several ways this could be improved, but they fall beyond the scope of this report. 
-Perhaps most straightforward we could further improve our regular expression simplifcation---or change the inductive construction to more easily allow for commutativity.
-Furthermore, their are additional algorithms beyond just Kleene's for converting from automata to regular expressions, searching for definining properties to make an automaton a better fit for another may be a helpful optimisation.
-Finally, we could instead simplify the autmata rather than the regular expression.
-There exists a minimal equivalent determinisitic automata for every regular language, implementing such a minimisation algorithm would also increase usability.
+However, reduction of regular expressions is \textsf{NP}-hard, and so we have simply tried to encode a few, computationally quick, simplifications as noted in Section~\ref{sec:Regex}.
+This is most pressing when we convert back into an automaton, since each new operator corresponds to an additional structural level in the automaton and an additional complication when running words on automata.
+There are several ways this could be improved.
+Perhaps most straightforward would be to further improve our regular expression simplifcation---or change the type definition to more easily manage commutativity.
+Another possibility would be to implement other algorithms aside from Kleene's which might be better-fit for converting certain automata, comparing results across them.
+Finally, we could implement automaton-minimisation.
