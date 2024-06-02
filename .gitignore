@@ -27,11 +27,8 @@ haskelleene.out
 haskelleene.aux
 haskelleene.bbl
 haskelleene.blg
-report.fdb*
-report.out
-report.aux
-report.bbl
-report.blg
+haskelleene.log
+haskelleene.toc
 .DS_Store
 *.toc
 *.log

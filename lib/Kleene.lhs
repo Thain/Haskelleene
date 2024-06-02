@@ -9,7 +9,7 @@ Finally, we will note general problems with the above two steps as well as possi
 module Kleene where
 
 import Alphabet   ( Alphabet(..) )
-import Automata   ( AutData(..), DetAut(..), NDetAut(..), encodeNA, trsOf )
+import Automata   ( AutData(..), NDetAut(..), encodeNA, trsOf )
 import Regex      ( Regex(..), simplifyRegex, altList, seqList )
 import Data.Maybe ( fromJust, isNothing )
 

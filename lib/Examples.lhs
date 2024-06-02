@@ -14,7 +14,7 @@ module Examples where
 import Alphabet ( Letter(..) )
 import Automata
     ( AutData(AD), DetAut, NDetAut,
-      encodeDA, encodeNA, run, acceptDA )
+      encodeDA, encodeNA )
 import Regex ( Regex(..) )
 import Data.Maybe ( fromJust )
 \end{code}

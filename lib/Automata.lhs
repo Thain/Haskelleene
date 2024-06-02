@@ -168,9 +168,9 @@ runNA na st w = (Set.elems . runNAFixPt na . Set.map (w,)) start
         runNAFixPt nda active = if active == next then active else runNAFixPt na next
           where next = appStep active
                 appStep ac = Set.fromList $ concatMap (uncurry oneStep) ac
-                oneStep [] s = ([], st) : (([],) <$> (ndelta nda Nothing s))
-                oneStep (c:cs) s  = ((cs,) <$> (ndelta nda (Just c) s))
-                                        ++ ((c:cs,) <$> (epReachable nda s))
+                oneStep [] s = ([], st) : (([],) <$> ndelta nda Nothing s)
+                oneStep (c:cs) s  = ((cs,) <$> ndelta nda (Just c) s)
+                                        ++ ((c:cs,) <$> epReachable nda s)
 
 epReachable :: (Alphabet l, Ord s) => NDetAut l s -> s -> [s]
 epReachable na s = map snd (runNA na s [])
@@ -191,14 +191,14 @@ fromNA nda = DA { states = Set.toList subsets
                 , delta = psetDelta }
   where subsets  = Set.powerSet $ Set.fromList $ nstates nda
         acchelp set = (not . Set.disjoint set . Set.fromList) acceptSingles
-        acceptSingles = filter (\s -> (not . null) (intersect (epReachable nda s) (naccept nda))) (nstates nda)
+        acceptSingles = filter (\s -> (not . null) (epReachable nda s `intersect` naccept nda)) (nstates nda)
         psetDelta l s = Set.unions $ Set.map (onestep l) s
         onestep l s = Set.fromList $ result ++ concatMap (epReachable nda) result
-          where result = (ndelta nda) (Just l) s
+          where result = ndelta nda (Just l) s
 
 -- determinise NA, then run as as DA and check acceptance
 dtdAccept :: (Alphabet l, Ord s) => NDetAut l s -> s -> [l] -> Bool
-dtdAccept na st w = (run dtd initSt w) `elem` (accept dtd)
+dtdAccept na st w = run dtd initSt w `elem` accept dtd
    where dtd = fromNA na
          initSt = Set.fromList (epReachable na st)
 \end{code}

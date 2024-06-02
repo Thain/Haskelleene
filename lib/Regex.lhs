@@ -41,13 +41,9 @@ pPrintRgx (Star (L a)) = pPrintLetter a ++ "*"
 pPrintRgx (Star r) = "(" ++ pPrintRgx r ++ ")*"
 
 -- QoL functions for sequencing or alternating lists of regexes
-seqList :: [Regex l] -> Regex l
-seqList [] = Epsilon
-seqList (l:ls) = Seq l $ seqList ls
-
-altList :: [Regex l] -> Regex l
-altList [] = Empty
-altList (l:ls) = Alt l $ altList ls
+seqList, altList :: [Regex l] -> Regex l
+seqList = foldr Seq Epsilon
+altList = foldr Alt Empty
 \end{code}
 It is outside of the scope of this project to implement an equivalence checker for regexes. Having said that, there are certain simplifications we can make to regular expressions that will help improve readability and running time. For example:
 \begin{align*}
