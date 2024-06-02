@@ -18,6 +18,7 @@ import Automata
       AutData(AD),
       encodeDA,
       run,
+      runNA,
       acceptDA,
       encodeNA, )
 import Regex ( Regex(..) )
@@ -119,7 +120,8 @@ myNAutData = AD [1,2,3,4]         -- the states
                 [4]               -- accepting states
                 [(1,[(Nothing,2)
                     ,(Just C,3)])
-                ,(2,[(Nothing,4)
+                ,(2,[(Nothing,1)
+                    ,(Nothing,4)
                     ,(Just B,2)
                     ,(Just C,1)])
                 ,(1,[(Just A,2), -- want to merge these with above
